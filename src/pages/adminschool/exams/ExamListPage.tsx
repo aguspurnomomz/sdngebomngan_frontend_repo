@@ -337,13 +337,13 @@ export default function ExamListPage() {
             {search
               ? 'Tidak ada ujian yang cocok'
               : statusFilter === 'all'
-              ? 'Belum ada ujian'
-              : `Belum ada ujian berstatus ${STATUS_CONFIG[statusFilter as 'draft' | 'published' | 'archived'].label}`}
+              ? 'Belum ada soal ujian'
+              : `Belum ada soal ujian berstatus ${STATUS_CONFIG[statusFilter as 'draft' | 'published' | 'archived'].label}`}
           </p>
           <p className="mb-5 text-xs text-tp-muted">
             {search
               ? 'Coba kata kunci lain atau reset filter.'
-              : 'Mulai buat ujian pertama Anda dengan klik tombol di bawah.'}
+              : 'Mulai buat soal ujian dengan klik tombol di bawah.'}
           </p>
           {!search && statusFilter === 'all' && (
             <button
@@ -351,7 +351,7 @@ export default function ExamListPage() {
               onClick={() => navigate('/school-admin/dashboard/exams/create')}
               className="inline-flex items-center gap-2 rounded-xl bg-tp-green px-4 py-2.5 text-sm font-semibold text-white hover:bg-tp-green-hover"
             >
-              <Plus size={16} /> Buat Ujian Pertama
+              <Plus size={16} /> Buat Soal Ujian
             </button>
           )}
         </div>

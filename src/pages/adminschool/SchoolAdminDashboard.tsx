@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
-import teachpartnerIcon from '../../assets/logo-new-version.png'
+import skoolagoIcon from '../../assets/logo-new-version.png'
+import sdngembonganIcon from '../../assets/logo_gembongan.png'
 import {
   Users, 
   Building2, 
@@ -41,7 +42,7 @@ export default function SchoolAdminDashboard({ session }: { session: any }) {
 
   const email = session?.user?.email ?? 'Admin Sekolah'
   const displayName = email.split('@')[0] || 'Admin'
-  const initial = (email.charAt(0) || 'A').toUpperCase()
+  //const initial = (email.charAt(0) || 'A').toUpperCase()
 
   const menuItems: MenuItem[] = [
     {
@@ -143,8 +144,8 @@ export default function SchoolAdminDashboard({ session }: { session: any }) {
       >
         <div className="mb-9 flex items-center gap-2.5 px-2">
           <img
-            src={teachpartnerIcon}
-            alt="TeachPartner"
+            src={skoolagoIcon}
+            alt="SkoolaGo"
             className="h-8 w-auto object-contain"
           />
         </div>
@@ -296,8 +297,8 @@ export default function SchoolAdminDashboard({ session }: { session: any }) {
 
           <div className="ml-auto flex items-center gap-2.5">
             <div className="flex items-center gap-2.5 pl-1.5">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-tp-green text-sm font-bold text-white">
-                {initial}
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden">
+                <img src={sdngembonganIcon} alt="Profile" className="h-full w-full object-contain" />
               </div>
               <div className="hidden min-w-0 flex-col lg:flex">
                 <strong className="max-w-[160px] truncate text-[13px] font-bold text-tp-text">
