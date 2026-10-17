@@ -33,9 +33,15 @@ export default function LoginBanner() {
         <h2 className="mb-2 text-xl font-bold leading-snug tracking-tight sm:text-[22px] md:text-[26px]">
           Kelola dan buat administrasi mengajar menjadi lebih mudah
         </h2>
-        <p className="max-w-xs text-xs leading-relaxed text-white/80 sm:text-sm">
+        {/* <p className="max-w-xs text-xs leading-relaxed text-white/80 sm:text-sm">
           Satu platform terintegrasi untuk kehadiran, bank soal, e-book dan kelola ujian siswa.
+        </p> */}
+
+        <p className="max-w-xs text-xs leading-relaxed text-white/80 sm:text-sm">
+          Satu platform terintegrasi untuk bank soal dan kelola ujian siswa.
         </p>
+        
+        
       </div>
 
       <div className="relative z-10 text-[11px] text-white/55 sm:text-xs">

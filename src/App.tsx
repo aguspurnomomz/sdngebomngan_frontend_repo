@@ -7,7 +7,7 @@ import axios from 'axios'
 // import LoginPage  from './pages/LoginPage'
 
 // [NEW] Test yang baru — 2 halaman login terpisah
-import GuruLoginPage from './pages/auth/GuruLoginPage'
+// import GuruLoginPage from './pages/auth/GuruLoginPage'
 import AdminSchoolLoginPage from './pages/auth/AdminSchoolLoginPage'
 
 import RegisterPage from './pages/RegisterPage'
@@ -40,18 +40,18 @@ import ClassManagementPage from './pages/adminschool/ClassManagementPage'
 import StudentManagementPage from './pages/adminschool/StudentManagementPage'
 import SchoolInactivePage from './pages/adminschool/SchoolInactivePage'
 
-import AttendanceDashboard from './pages/adminschool/attendance/AttendanceDashboard'
-import ShiftManagementPage from './pages/adminschool/attendance/ShiftManagementPage'
-import CalendarManagementPage from './pages/adminschool/attendance/CalendarManagementPage'
-import ShiftAssignmentPage from './pages/adminschool/attendance/ShiftAssignmentPage'
-import QrCodeManagementPage from './pages/adminschool/attendance/QrCodeManagementPage'
-import AttendanceSessionPage from './pages/adminschool/attendance/AttendanceSessionPage'
-import AttendanceScannerPage from './pages/adminschool/attendance/AttendanceScannerPage'
-import AttendanceReportPage from './pages/adminschool/attendance/AttendanceReportPage'
+// import AttendanceDashboard from './pages/adminschool/attendance/AttendanceDashboard'
+// import ShiftManagementPage from './pages/adminschool/attendance/ShiftManagementPage'
+// import CalendarManagementPage from './pages/adminschool/attendance/CalendarManagementPage'
+// import ShiftAssignmentPage from './pages/adminschool/attendance/ShiftAssignmentPage'
+// import QrCodeManagementPage from './pages/adminschool/attendance/QrCodeManagementPage'
+// import AttendanceSessionPage from './pages/adminschool/attendance/AttendanceSessionPage'
+// import AttendanceScannerPage from './pages/adminschool/attendance/AttendanceScannerPage'
+// import AttendanceReportPage from './pages/adminschool/attendance/AttendanceReportPage'
 
-import RfidCardManagementPage from './pages/adminschool/attendance/RfidCardManagementPage'
-import DeviceManagementPage from './pages/adminschool/attendance/DeviceManagementPage'
-import KioskPage from './pages/kiosk/KioskPage'
+// import RfidCardManagementPage from './pages/adminschool/attendance/RfidCardManagementPage'
+// import DeviceManagementPage from './pages/adminschool/attendance/DeviceManagementPage'
+// import KioskPage from './pages/kiosk/KioskPage'
 
 import ExamListPage from './pages/adminschool/exams/ExamListPage'
 import CreateExamPage from './pages/adminschool/exams/CreateExamPage'
@@ -415,7 +415,8 @@ export default function App() {
       {/* ============================================================
           [NEW] Route Login Guru — 2 tab (Individual & Sekolah)
           ============================================================ */}
-      <Route
+          {/** matiin dulu path login gutu */}
+      {/* <Route
         path="/login/guru"
         element={
           !session ? (
@@ -447,7 +448,7 @@ export default function App() {
             <Navigate to="/" replace />
           )
         }
-      />
+      /> */}
 
       {/* ============================================================
           [NEW] Route Login Admin Sekolah — tanpa tab, tanpa OAuth
@@ -512,20 +513,20 @@ export default function App() {
         <Route path="students" element={<StudentManagementPage />} />
 
         {/* Attendance Routes */}
-        <Route path="attendance" element={<AttendanceDashboard />} />
+        {/* <Route path="attendance" element={<AttendanceDashboard />} />
         <Route path="attendance/shifts" element={<ShiftManagementPage />} />
         <Route path="attendance/calendar" element={<CalendarManagementPage />} />
         <Route path="attendance/assignments" element={<ShiftAssignmentPage />} />
         <Route path="attendance/qr-codes" element={<QrCodeManagementPage />} />
-        <Route path="attendance/sessions" element={<AttendanceSessionPage />} />
-        <Route
+        <Route path="attendance/sessions" element={<AttendanceSessionPage />} /> */}
+        {/* <Route
           path="attendance/scanner/:sessionId"
           element={<AttendanceScannerPage />}
-        />
-        <Route path="attendance/reports" element={<AttendanceReportPage />} />
+        /> */}
+        {/* <Route path="attendance/reports" element={<AttendanceReportPage />} /> */}
         {/* RFID & Kiosk Routes */}
-        <Route path="attendance/rfid-cards" element={<RfidCardManagementPage />} />
-        <Route path="attendance/devices" element={<DeviceManagementPage />} />
+        {/* <Route path="attendance/rfid-cards" element={<RfidCardManagementPage />} /> */}
+        {/* <Route path="attendance/devices" element={<DeviceManagementPage />} /> */}
         {/* === EXAM ROUTES === */}
         <Route path="exams" element={<ExamListPage />} />
         <Route path="exams/create" element={<CreateExamPage />} />
@@ -547,7 +548,7 @@ export default function App() {
       </Route>
 
       {/* Kiosk Route — tanpa login, auth via device code */}
-      <Route path="/kiosk/:deviceCode" element={<KioskPage />} />
+      {/* <Route path="/kiosk/:deviceCode" element={<KioskPage />} /> */}
 
       {/* --- Route Register & Publik --- */}
       <Route path="/register" element={<RegisterPage />} />
@@ -574,7 +575,8 @@ export default function App() {
             // <LoginPage />
 
             // [NEW] Redirect ke /login/guru (default portal guru)
-            <Navigate to="/login/guru" replace />
+            // <Navigate to="/login/guru" replace />
+            <Navigate to="/login/admin-sekolah" replace />
           ) : authError ? (
             <div className="grid min-h-screen place-items-center text-center p-6">
               <div>

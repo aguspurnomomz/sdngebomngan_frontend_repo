@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+//import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import LoginBanner from './components/LoginBanner'
 import EmailPasswordForm from './components/EmailPasswordForm'
@@ -64,14 +64,15 @@ export default function AdminSchoolLoginPage() {
             </p>
           </div>
 
-          <div className="mt-4 text-center">
+          {/** matikan dulu ini */}
+          {/* <div className="mt-4 text-center">
             <Link
               to="/login/guru"
               className="text-xs text-tp-muted hover:text-tp-green transition-colors"
             >
               ← Kembali ke Portal Guru
             </Link>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

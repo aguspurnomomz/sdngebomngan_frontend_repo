@@ -3,9 +3,18 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import teachpartnerIcon from '../../assets/logo-new-version.png'
 import {
-  Users, Building2, ShieldCheck, LogOut, Calendar, CalendarClock,
-  LayoutDashboard, GraduationCap, ClipboardCheck, FileText,
-  ChevronDown, ChevronRight,
+  Users, 
+  Building2, 
+  ShieldCheck, 
+  LogOut, 
+  Calendar, 
+  CalendarClock,
+  LayoutDashboard, 
+  GraduationCap, 
+  // ClipboardCheck, 
+  FileText,
+  ChevronDown, 
+  ChevronRight,
 } from 'lucide-react'
 
 type MenuItem = {
@@ -78,11 +87,11 @@ export default function SchoolAdminDashboard({ session }: { session: any }) {
         },
       ],
     },
-    {
-      path: '/school-admin/dashboard/attendance',
-      label: 'Kelola Absensi',
-      icon: <ClipboardCheck size={18} />,
-    },
+    // {
+    //   path: '/school-admin/dashboard/attendance',
+    //   label: 'Kelola Absensi',
+    //   icon: <ClipboardCheck size={18} />,
+    // },
   ]
 
   const toggleMenu = (key: string) => {
