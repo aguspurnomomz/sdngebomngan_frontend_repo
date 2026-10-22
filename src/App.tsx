@@ -22,7 +22,7 @@ import DashboardOverview from './pages/userteacher/DashboardOverview'
 import QuestionBankPage from './pages/userteacher/QuestionBankPage'
 import ProfilePage from './pages/userteacher/ProfilePage'
 import EbooksPage from './pages/userteacher/EbooksPage'
-import BillingPage from './pages/userteacher/BillingPage'
+//import BillingPage from './pages/userteacher/BillingPage'
 import ExamSessionPage from './pages/userteacher/ExamSessionPage'
 
 import TakeSchoolExamPage from './pages/studentexam/TakeSchoolExamPage'
@@ -38,7 +38,13 @@ import SchoolAcademicYearPage from './pages/adminschool/SchoolAcademicYearPage'
 import SchoolProfilePage from './pages/adminschool/SchoolProfilePage'
 import ClassManagementPage from './pages/adminschool/ClassManagementPage'
 import StudentManagementPage from './pages/adminschool/StudentManagementPage'
+import TeacherManagementPage from './pages/adminschool/TeacherManagementPage'
+import SubjectManagementPage from './pages/adminschool/SubjectManagementPage'
 import SchoolInactivePage from './pages/adminschool/SchoolInactivePage'
+
+import TimetableManagementPage from './pages/adminschool/TimetableManagementPage'
+import TimetableEditorPage from './pages/adminschool/TimetableEditorPage'
+import TimeSlotManagementPage from './pages/adminschool/TimeSlotManagementPage'
 
 // import AttendanceDashboard from './pages/adminschool/attendance/AttendanceDashboard'
 // import ShiftManagementPage from './pages/adminschool/attendance/ShiftManagementPage'
@@ -510,7 +516,12 @@ export default function App() {
         <Route path="school" element={<SchoolProfilePage />} />
         <Route path="academic-years" element={<SchoolAcademicYearPage />} />
         <Route path="classes" element={<ClassManagementPage />} />
+        <Route path="teachers" element={<TeacherManagementPage />} />
         <Route path="students" element={<StudentManagementPage />} />
+        <Route path="subjects" element={<SubjectManagementPage />} />
+        <Route path="timetables" element={<TimetableManagementPage />} />
+        <Route path="timetables/:timetableId" element={<TimetableEditorPage />} />
+        <Route path="time-slots" element={<TimeSlotManagementPage />} />
 
         {/* Attendance Routes */}
         {/* <Route path="attendance" element={<AttendanceDashboard />} />
@@ -618,7 +629,7 @@ export default function App() {
         />
 
         <Route path="ebooks" element={<EbooksPage />} />
-        <Route path="billing" element={<BillingPage />} />
+        {/* <Route path="billing" element={<BillingPage />} /> */}
         <Route path="exam-session" element={<ExamSessionPage session={session} />} />
 
         {/* ==========================================

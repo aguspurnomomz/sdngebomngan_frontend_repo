@@ -21,6 +21,7 @@ interface Student {
   full_name: string
   student_number: string
   nisn: string
+  jenis_kelamin: string 
   is_active: boolean
   created_at: string
   class_sub_group_id: string | null
@@ -59,12 +60,14 @@ export default function StudentManagementPage() {
   const [errorMessage, setErrorMessage] = useState('')
   const [filterSubClassId, setFilterSubClassId] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 10
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false)
   const [editingStudent, setEditingStudent] = useState<Student | null>(null)
   const [formFullName, setFormFullName] = useState('')
   const [formStudentNumber, setFormStudentNumber] = useState('')
   const [formNISN, setFormNISN] = useState('')
+  const [formJenisKelamin, setFormJenisKelamin] = useState('') 
   const [formSubClassId, setFormSubClassId] = useState('')
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
@@ -174,15 +177,26 @@ export default function StudentManagementPage() {
     fetchStudents()
   }, [fetchStudents])
 
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, filterSubClassId])
+
   
   const handleOpenAddModal = () => {
     setEditingStudent(null)
     setFormFullName('')
     setFormStudentNumber('')
     setFormNISN('')
+    setFormJenisKelamin('')
     setFormSubClassId(filterSubClassId || '')
     setFormError('')
     setIsStudentModalOpen(true)
+  }
+
+  const handleCloseStudentModal = () => {
+    setIsStudentModalOpen(false)
+    setFormError('')
+    setFormSubmitting(false)
   }
 
   const handleOpenEditModal = (student: Student) => {
@@ -190,6 +204,7 @@ export default function StudentManagementPage() {
     setFormFullName(student.full_name)
     setFormStudentNumber(student.student_number)
     setFormNISN(student.nisn)
+    setFormJenisKelamin(student.jenis_kelamin || '')
     setFormSubClassId(student.class_sub_group_id ?? '')
     setFormError('')
     setIsStudentModalOpen(true)
@@ -232,6 +247,7 @@ export default function StudentManagementPage() {
             full_name: formFullName.trim(),
             student_number: formStudentNumber.trim(),
             nisn: formNISN.trim(),
+            jenis_kelamin: formJenisKelamin,   // ✅ TAMBAHKAN INI
             class_sub_group_id: formSubClassId,
           },
           { headers: { Authorization: `Bearer ${token}` } }
@@ -245,12 +261,13 @@ export default function StudentManagementPage() {
             full_name: formFullName.trim(),
             student_number: formStudentNumber.trim(),
             nisn: formNISN.trim(),
+            jenis_kelamin: formJenisKelamin,   
             class_sub_group_id: formSubClassId,
           },
           { headers: { Authorization: `Bearer ${token}` } }
         )
         showSuccess('Murid berhasil ditambahkan!')
-      }
+}
 
       setIsStudentModalOpen(false)
       await Promise.all([fetchStudents(), fetchStats()])
@@ -277,9 +294,16 @@ export default function StudentManagementPage() {
       const token = await getAuthToken()
       if (!token) return
 
-      await axios.post(
-        `${API_URL}/api/school-admin/students/${movingStudent.id}/move`,
-        { target_sub_group_id: targetSubClassId },
+
+      await axios.put(
+        `${API_URL}/api/school-admin/students/${movingStudent.id}`,
+        {
+          full_name: movingStudent.full_name,
+          student_number: movingStudent.student_number,
+          nisn: movingStudent.nisn,
+          jenis_kelamin: movingStudent.jenis_kelamin,
+          class_sub_group_id: targetSubClassId,
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       )
 
@@ -324,6 +348,16 @@ export default function StudentManagementPage() {
       s.student_number.toLowerCase().includes(q)
     )
   })
+
+  // Total halaman berdasarkan hasil filter (bukan data mentah)
+  const totalPages = Math.ceil(filteredStudents.length / ITEMS_PER_PAGE)
+
+  // Hitung index awal dan akhir untuk data yang ditampilkan
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const endIndex = startIndex + ITEMS_PER_PAGE
+
+  // Potong array sesuai halaman aktif
+  const paginatedStudents = filteredStudents.slice(startIndex, endIndex)
 
 
   return (
@@ -485,29 +519,45 @@ export default function StudentManagementPage() {
           </div>
         ) : (
           <>
-            <div className="text-[11px] text-tp-muted">
+            {/* <div className="text-[11px] text-tp-muted">
               Menampilkan <strong>{filteredStudents.length}</strong> dari{' '}
               <strong>{students.length}</strong> siswa
-            </div>
+            </div> */}
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-tp-border bg-gray-50 text-xs text-tp-muted uppercase tracking-wider">
                     <th className="py-3 px-4">No</th>
                     <th className="py-3 px-4">Nama Siswa</th>
+                    <th className="py-3 px-4">L/P</th> 
                     <th className="py-3 px-4">NISN</th>
-                    <th className="py-3 px-4">No. Siswa</th>
+                    <th className="py-3 px-4">No. Absen</th>
                     <th className="py-3 px-4">Sub Kelas</th>
                     <th className="py-3 px-4">Master Kelas</th>
                     <th className="py-3 px-4 text-right">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-tp-border">
-                  {filteredStudents.map((std, index) => (
+                  {paginatedStudents.map((std, index) => (
                     <tr key={std.id} className="hover:bg-gray-50">
-                      <td className="py-3 px-4 text-tp-muted">{index + 1}</td>
+                       <td className="py-3 px-4 text-tp-muted">
+                        {startIndex + index + 1}
+                      </td>
                       <td className="py-3 px-4 font-semibold text-tp-text">
                         {std.full_name}
+                      </td>
+                      <td className="py-3 px-4">
+                        {std.jenis_kelamin === 'L' ? (
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold">
+                            L
+                          </span>
+                        ) : std.jenis_kelamin === 'P' ? (
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-pink-100 text-pink-700 text-[10px] font-bold">
+                            P
+                          </span>
+                        ) : (
+                          <span className="text-xs text-tp-muted italic">-</span>
+                        )}
                       </td>
                       <td className="py-3 px-4 text-xs font-mono">
                         {std.nisn || '-'}
@@ -558,6 +608,70 @@ export default function StudentManagementPage() {
                   ))}
                 </tbody>
               </table>
+              {/* Pagination Controls */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-tp-border">
+                <p className="text-[11px] text-tp-muted">
+                  Halaman <strong>{currentPage}</strong> dari <strong>{totalPages || 1}</strong>
+                  {' · '}Menampilkan{' '}
+                  <strong>{filteredStudents.length === 0 ? 0 : startIndex + 1}</strong>–
+                  <strong>{Math.min(endIndex, filteredStudents.length)}</strong> dari{' '}
+                  <strong>{filteredStudents.length}</strong> siswa
+                </p>
+
+                <div className="flex items-center gap-1">
+                  {/* Tombol Prev */}
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="rounded-lg border border-tp-border bg-white px-3 py-1.5 text-xs font-semibold text-tp-text hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    ← Prev
+                  </button>
+
+                  {/* Nomor Halaman */}
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter((page) => {
+                      // Tampilkan hanya halaman di sekitar halaman aktif (maks 5 tombol)
+                      return (
+                        page === 1 ||
+                        page === totalPages ||
+                        Math.abs(page - currentPage) <= 1
+                      )
+                    })
+                    .map((page, idx, arr) => {
+                      // Tambahkan ellipsis "..." jika ada jarak
+                      const prevPage = arr[idx - 1]
+                      const showEllipsis = prevPage && page - prevPage > 1
+
+                      return (
+                        <span key={page} className="flex items-center gap-1">
+                          {showEllipsis && (
+                            <span className="px-1 text-xs text-tp-muted">...</span>
+                          )}
+                          <button
+                            onClick={() => setCurrentPage(page)}
+                            className={`min-w-[32px] rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+                              currentPage === page
+                                ? 'bg-tp-green text-white'
+                                : 'border border-tp-border bg-white text-tp-text hover:bg-gray-50'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        </span>
+                      )
+                    })}
+
+                  {/* Tombol Next */}
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages || totalPages === 0}
+                    className="rounded-lg border border-tp-border bg-white px-3 py-1.5 text-xs font-semibold text-tp-text hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Next →
+                  </button>
+                </div>
+              </div>
             </div>
           </>
         )}
@@ -571,10 +685,7 @@ export default function StudentManagementPage() {
               <h3 className="text-sm font-bold text-tp-text">
                 {editingStudent ? 'Edit Data Siswa' : 'Tambah Siswa Baru'}
               </h3>
-              <button
-                onClick={() => setIsStudentModalOpen(false)}
-                className="text-tp-muted hover:text-tp-text"
-              >
+              <button onClick={handleCloseStudentModal} className="text-tp-muted hover:text-tp-text">
                 <X size={18} />
               </button>
             </div>
@@ -620,7 +731,7 @@ export default function StudentManagementPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-tp-muted mb-1">
-                    No. Siswa
+                    No. Absen
                   </label>
                   <input
                     type="text"
@@ -629,6 +740,38 @@ export default function StudentManagementPage() {
                     placeholder="Nomor absen (opsional)"
                     className="w-full rounded-xl border border-tp-border px-3.5 py-2.5 text-sm outline-none focus:border-tp-green"
                   />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-tp-muted mb-1">
+                    Jenis Kelamin
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFormJenisKelamin('L')}
+                      className={`flex-1 rounded-xl border px-3 py-2.5 text-sm font-semibold transition-colors ${
+                        formJenisKelamin === 'L'
+                          ? 'border-tp-green bg-tp-green text-white'
+                          : 'border-tp-border bg-white text-tp-muted hover:border-tp-green'
+                      }`}
+                    >
+                      Laki-laki
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormJenisKelamin('P')}
+                      className={`flex-1 rounded-xl border px-3 py-2.5 text-sm font-semibold transition-colors ${
+                        formJenisKelamin === 'P'
+                          ? 'border-pink-500 bg-pink-500 text-white'
+                          : 'border-tp-border bg-white text-tp-muted hover:border-pink-400'
+                      }`}
+                    >
+                      Perempuan
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-tp-muted mt-1">
+                    Opsional. Bisa diisi nanti untuk data Dapodik.
+                  </p>
                 </div>
               </div>
 
@@ -664,7 +807,7 @@ export default function StudentManagementPage() {
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setIsStudentModalOpen(false)}
+                  onClick={handleCloseStudentModal}
                   className="rounded-xl border border-tp-border bg-white px-4 py-2.5 text-xs font-semibold text-tp-muted hover:bg-gray-50"
                 >
                   Batal

@@ -115,6 +115,11 @@ export default function ClassManagementPage() {
   const [errorMessage, setErrorMessage] = useState('')
   const [activeTab, setActiveTab] = useState<TabType>('classes')
   const [schoolInactive, setSchoolInactive] = useState(false)
+
+  const [currentPageClasses, setCurrentPageClasses] = useState(1)
+  const [currentPageSubClasses, setCurrentPageSubClasses] = useState(1)
+  const ITEMS_PER_PAGE = 10
+
   const [name, setName] = useState('')
   const [isCustomName, setIsCustomName] = useState(false)
   const [level, setLevel] = useState('7')
@@ -238,6 +243,11 @@ export default function ClassManagementPage() {
     if (activeTab === 'sub-classes') {
       fetchAllSubClasses()
     }
+  }, [activeTab])
+
+  useEffect(() => {
+    setCurrentPageClasses(1)
+    setCurrentPageSubClasses(1)
   }, [activeTab])
 
   const handleCreateClass = async (e: React.FormEvent) => {
@@ -510,6 +520,16 @@ export default function ClassManagementPage() {
     )
   }
 
+  const totalPagesClasses = Math.ceil(classes.length / ITEMS_PER_PAGE)
+  const startIndexClasses = (currentPageClasses - 1) * ITEMS_PER_PAGE
+  const endIndexClasses = startIndexClasses + ITEMS_PER_PAGE
+  const paginatedClasses = classes.slice(startIndexClasses, endIndexClasses)
+
+  // Logic Pagination Sub Kelas
+  const totalPagesSubClasses = Math.ceil(allSubClasses.length / ITEMS_PER_PAGE)
+  const startIndexSubClasses = (currentPageSubClasses - 1) * ITEMS_PER_PAGE
+  const endIndexSubClasses = startIndexSubClasses + ITEMS_PER_PAGE
+  const paginatedSubClasses = allSubClasses.slice(startIndexSubClasses, endIndexSubClasses)
 
   return (
     <div className="space-y-6">
@@ -610,9 +630,11 @@ export default function ClassManagementPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-tp-border">
-                    {classes.map((cls, index) => (
+                    {paginatedClasses.map((cls, index) => (
                       <tr key={cls.id} className="hover:bg-gray-50">
-                        <td className="py-3 px-4 text-tp-muted">{index + 1}</td>
+                         <td className="py-3 px-4 text-tp-muted">
+                          {startIndexClasses + index + 1}
+                        </td>
                         <td className="py-3 px-4 font-medium text-tp-text">{cls.school_name}</td>
                         <td className="py-3 px-4 font-semibold text-tp-text">{cls.name}</td>
                         <td className="py-3 px-4">
@@ -645,6 +667,51 @@ export default function ClassManagementPage() {
                     ))}
                   </tbody>
                 </table>
+                {/* --- TAMBAHKAN PAGINATION KELAS DI SINI --- */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-tp-border">
+                  <p className="text-[11px] text-tp-muted">
+                    Halaman <strong>{currentPageClasses}</strong> dari <strong>{totalPagesClasses || 1}</strong>
+                    {' · '}Menampilkan <strong>{classes.length === 0 ? 0 : startIndexClasses + 1}</strong>–
+                    <strong>{Math.min(endIndexClasses, classes.length)}</strong> dari <strong>{classes.length}</strong> kelas
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setCurrentPageClasses((p) => Math.max(1, p - 1))}
+                      disabled={currentPageClasses === 1}
+                      className="rounded-lg border border-tp-border bg-white px-3 py-1.5 text-xs font-semibold text-tp-text hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      ← Prev
+                    </button>
+                    {Array.from({ length: totalPagesClasses }, (_, i) => i + 1)
+                      .filter((page) => page === 1 || page === totalPagesClasses || Math.abs(page - currentPageClasses) <= 1)
+                      .map((page, idx, arr) => {
+                        const prevPage = arr[idx - 1]
+                        const showEllipsis = prevPage && page - prevPage > 1
+                        return (
+                          <span key={page} className="flex items-center gap-1">
+                            {showEllipsis && <span className="px-1 text-xs text-tp-muted">...</span>}
+                            <button
+                              onClick={() => setCurrentPageClasses(page)}
+                              className={`min-w-[32px] rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+                                currentPageClasses === page
+                                  ? 'bg-tp-green text-white'
+                                  : 'border border-tp-border bg-white text-tp-text hover:bg-gray-50'
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          </span>
+                        )
+                      })}
+                    <button
+                      onClick={() => setCurrentPageClasses((p) => Math.min(totalPagesClasses, p + 1))}
+                      disabled={currentPageClasses === totalPagesClasses || totalPagesClasses === 0}
+                      className="rounded-lg border border-tp-border bg-white px-3 py-1.5 text-xs font-semibold text-tp-text hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Next →
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </>
@@ -681,9 +748,11 @@ export default function ClassManagementPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-tp-border">
-                    {allSubClasses.map((sub, index) => (
+                    {paginatedSubClasses.map((sub, index) => (
                       <tr key={sub.id} className="hover:bg-gray-50">
-                        <td className="py-3 px-4 text-tp-muted">{index + 1}</td>
+                         <td className="py-3 px-4 text-tp-muted">
+                          {startIndexSubClasses + index + 1}
+                        </td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
                             <span className="font-semibold text-tp-text">
@@ -739,6 +808,51 @@ export default function ClassManagementPage() {
                     ))}
                   </tbody>
                 </table>
+                {/* --- TAMBAHKAN PAGINATION SUB KELAS DI SINI --- */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-tp-border">
+                  <p className="text-[11px] text-tp-muted">
+                    Halaman <strong>{currentPageSubClasses}</strong> dari <strong>{totalPagesSubClasses || 1}</strong>
+                    {' · '}Menampilkan <strong>{allSubClasses.length === 0 ? 0 : startIndexSubClasses + 1}</strong>–
+                    <strong>{Math.min(endIndexSubClasses, allSubClasses.length)}</strong> dari <strong>{allSubClasses.length}</strong> sub kelas
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setCurrentPageSubClasses((p) => Math.max(1, p - 1))}
+                      disabled={currentPageSubClasses === 1}
+                      className="rounded-lg border border-tp-border bg-white px-3 py-1.5 text-xs font-semibold text-tp-text hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      ← Prev
+                    </button>
+                    {Array.from({ length: totalPagesSubClasses }, (_, i) => i + 1)
+                      .filter((page) => page === 1 || page === totalPagesSubClasses || Math.abs(page - currentPageSubClasses) <= 1)
+                      .map((page, idx, arr) => {
+                        const prevPage = arr[idx - 1]
+                        const showEllipsis = prevPage && page - prevPage > 1
+                        return (
+                          <span key={page} className="flex items-center gap-1">
+                            {showEllipsis && <span className="px-1 text-xs text-tp-muted">...</span>}
+                            <button
+                              onClick={() => setCurrentPageSubClasses(page)}
+                              className={`min-w-[32px] rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+                                currentPageSubClasses === page
+                                  ? 'bg-tp-green text-white'
+                                  : 'border border-tp-border bg-white text-tp-text hover:bg-gray-50'
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          </span>
+                        )
+                      })}
+                    <button
+                      onClick={() => setCurrentPageSubClasses((p) => Math.min(totalPagesSubClasses, p + 1))}
+                      disabled={currentPageSubClasses === totalPagesSubClasses || totalPagesSubClasses === 0}
+                      className="rounded-lg border border-tp-border bg-white px-3 py-1.5 text-xs font-semibold text-tp-text hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Next →
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </>

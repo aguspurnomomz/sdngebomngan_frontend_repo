@@ -14,8 +14,12 @@ import {
   GraduationCap, 
   // ClipboardCheck, 
   FileText,
+  UserCog,
   ChevronDown, 
   ChevronRight,
+  CalendarDays, 
+  Clock,
+  BookOpen
 } from 'lucide-react'
 
 type MenuItem = {
@@ -33,67 +37,114 @@ export default function SchoolAdminDashboard({ session }: { session: any }) {
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   const [expandedMenus, setExpandedMenus] = useState<string[]>(() => {
-    if (location.pathname.startsWith('/school-admin/dashboard/exams') ||
-        location.pathname.startsWith('/school-admin/dashboard/exam-schedules')) {
-      return ['exam-group']
-    }
-    return []
-  })
+  const initial: string[] = []
+
+  if (
+    location.pathname.startsWith('/school-admin/dashboard/exams') ||
+    location.pathname.startsWith('/school-admin/dashboard/exam-schedules')
+  ) {
+    initial.push('exam-group')
+  }
+
+  if (
+    location.pathname.startsWith('/school-admin/dashboard/time-slots') ||
+    location.pathname.startsWith('/school-admin/dashboard/timetables')
+  ) {
+    initial.push('timetable-group')
+  }
+
+  if (
+    location.pathname.startsWith('/school-admin/dashboard/classes') ||
+    location.pathname.startsWith('/school-admin/dashboard/students')
+  ) {
+    initial.push('class-group')
+  }
+
+  return initial
+})
 
   const email = session?.user?.email ?? 'Admin Sekolah'
   const displayName = email.split('@')[0] || 'Admin'
   //const initial = (email.charAt(0) || 'A').toUpperCase()
 
   const menuItems: MenuItem[] = [
-    {
-      path: '/school-admin/dashboard',
-      label: 'Ringkasan',
-      icon: <LayoutDashboard size={18} />,
-    },
-    {
-      path: '/school-admin/dashboard/school',
-      label: 'Data Sekolah',
-      icon: <Building2 size={18} />,
-    },
-    {
-      path: '/school-admin/dashboard/academic-years',
-      label: 'Tahun Akademik',
-      icon: <Calendar size={18} />,
-    },
-    {
-      path: '/school-admin/dashboard/classes',
-      label: 'Kelola Kelas',
-      icon: <Users size={18} />,
-    },
-    {
-      path: '/school-admin/dashboard/students',
-      label: 'Kelola Siswa',
-      icon: <GraduationCap size={18} />,
-    },
-    {
-      // sub menu
-      path: 'exam-group',
-      label: 'Kelola Ujian',
-      icon: <FileText size={18} />,
-      children: [
-        {
-          path: '/school-admin/dashboard/exams',
-          label: 'Soal Ujian',
-          icon: <FileText size={14} />,
-        },
-        {
-          path: '/school-admin/dashboard/exam-schedules',
-          label: 'Jadwal Ujian',
-          icon: <CalendarClock size={14} />,
-        },
-      ],
-    },
-    // {
-    //   path: '/school-admin/dashboard/attendance',
-    //   label: 'Kelola Absensi',
-    //   icon: <ClipboardCheck size={18} />,
-    // },
-  ]
+  {
+    path: '/school-admin/dashboard',
+    label: 'Beranda',
+    icon: <LayoutDashboard size={18} />,
+  },
+  {
+    path: '/school-admin/dashboard/school',
+    label: 'Data Sekolah',
+    icon: <Building2 size={18} />,
+  },
+  {
+    path: '/school-admin/dashboard/academic-years',
+    label: 'Tahun Akademik',
+    icon: <Calendar size={18} />,
+  },
+  {
+    path: '/school-admin/dashboard/teachers',
+    label: 'Manajemen Guru',
+    icon: <UserCog size={18} />,
+  },
+  {
+    path: '/school-admin/dashboard/subjects',
+    label: 'Mata Pelajaran',
+    icon: <BookOpen size={18} />,
+  },
+  {
+    path: 'timetable-group',
+    label: 'Jadwal Pelajaran',
+    icon: <CalendarDays size={18} />,
+    children: [
+      {
+        path: '/school-admin/dashboard/time-slots',
+        label: 'Pengaturan Jam',
+        icon: <Clock size={14} />,
+      },
+      {
+        path: '/school-admin/dashboard/timetables',
+        label: 'Buat Jadwal Baru',
+        icon: <CalendarDays size={14} />,
+      },
+    ],
+  },
+  {
+    path: 'class-group',
+    label: 'Manajemen Kelas',
+    icon: <Users size={18} />,
+    children: [
+      {
+        path: '/school-admin/dashboard/classes',
+        label: 'Kelola Kelas',
+        icon: <Users size={14} />,
+      },
+      {
+        path: '/school-admin/dashboard/students',
+        label: 'Kelola Siswa',
+        icon: <GraduationCap size={14} />,
+      },
+    ],
+  },
+  {
+    path: 'exam-group',
+    label: 'Kelola Ujian',
+    icon: <FileText size={18} />,
+    children: [
+      {
+        path: '/school-admin/dashboard/exams',
+        label: 'Soal Ujian',
+        icon: <FileText size={14} />,
+      },
+      {
+        path: '/school-admin/dashboard/exam-schedules',
+        label: 'Jadwal Ujian',
+        icon: <CalendarClock size={14} />,
+      },
+    ],
+  },
+]
 
   const toggleMenu = (key: string) => {
     setExpandedMenus((prev) =>
@@ -113,6 +164,45 @@ export default function SchoolAdminDashboard({ session }: { session: any }) {
     }
     checkSession()
   }, [navigate])
+
+  // Auto-expand grup menu sesuai path aktif
+  useEffect(() => {
+    const p = location.pathname
+    const toOpen: string[] = []
+
+    if (
+      p.startsWith('/school-admin/dashboard/exams') ||
+      p.startsWith('/school-admin/dashboard/exam-schedules')
+    ) {
+      toOpen.push('exam-group')
+    }
+
+    if (
+      p.startsWith('/school-admin/dashboard/time-slots') ||
+      p.startsWith('/school-admin/dashboard/timetables')
+    ) {
+      toOpen.push('timetable-group')
+    }
+
+    if (
+      p.startsWith('/school-admin/dashboard/classes') ||
+      p.startsWith('/school-admin/dashboard/students')
+    ) {
+      toOpen.push('class-group')
+    }
+
+    if (toOpen.length === 0) return
+
+    setExpandedMenus((prev) => {
+      // kalau semua sudah terbuka, kembalikan reference yang sama
+      // supaya tidak trigger re-render
+      const alreadyOpen = toOpen.every((k) => prev.includes(k))
+      if (alreadyOpen) return prev
+      const merged = new Set([...prev, ...toOpen])
+      return Array.from(merged)
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname])
 
   const handleLogout = async () => {
     try {
@@ -154,7 +244,7 @@ export default function SchoolAdminDashboard({ session }: { session: any }) {
         </div>
 
         <div className="mb-2.5 px-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-tp-faint">
-          Menu Admin
+          Menu Sidebar
         </div>
 
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">
@@ -315,6 +405,12 @@ export default function SchoolAdminDashboard({ session }: { session: any }) {
         <main className="w-full max-w-[1200px] px-4 pb-6 pt-6 sm:px-7 sm:pb-8">
           <Outlet />
         </main>
+             {/* footer */}
+        <footer className="w-full max-w-[1200px] px-4 pb-6 sm:px-7 sm:pb-8">
+          <div className="border-t border-tp-border pt-6 text-center text-xs text-tp-muted">
+            Copyright © 2025 - 2026 SkoolaGo. All Rights Reserved.
+          </div>
+        </footer>
       </div>
     </div>
   )
