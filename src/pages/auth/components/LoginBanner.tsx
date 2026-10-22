@@ -1,6 +1,7 @@
 import React from 'react'
 import { useMotionValue } from 'framer-motion'
-import teachpartnerIcon from '../../../assets/logo-new-version.png'
+import skoolagoIcon from '../../../assets/logo-new-version.png'
+import schoollogo from '../../../assets/logo_gembongan.png'
 
 export default function LoginBanner() {
   const x = useMotionValue(0)
@@ -23,22 +24,32 @@ export default function LoginBanner() {
 
       <div className="relative z-10 flex items-center gap-2.5 text-lg font-bold">
         <img
-          src={teachpartnerIcon}
-          alt="SkoolaGo"
+          src={schoollogo}
+          alt="sdngembongan"
+          className="h-7 w-auto object-contain md:h-8"
+        />
+
+        {/* Garis pemisah vertikal */}
+        <span className="h-5 w-px bg-white/30 md:h-6" aria-hidden="true" />
+
+        {/* Logo sekolah */}
+        <img
+          src={skoolagoIcon}
+          alt="skoolago"
           className="h-7 w-auto object-contain md:h-8"
         />
       </div>
 
       <div className="relative z-10 py-2 md:py-4 transition-transform ease-out">
         <h2 className="mb-2 text-xl font-bold leading-snug tracking-tight sm:text-[22px] md:text-[26px]">
-          Kelola dan buat administrasi mengajar menjadi lebih mudah
+          Kelola manajemen sekolah dan buat administrasi mengajar menjadi lebih mudah
         </h2>
         {/* <p className="max-w-xs text-xs leading-relaxed text-white/80 sm:text-sm">
           Satu platform terintegrasi untuk kehadiran, bank soal, e-book dan kelola ujian siswa.
         </p> */}
 
         <p className="max-w-xs text-xs leading-relaxed text-white/80 sm:text-sm">
-          Satu platform terintegrasi untuk bank soal dan kelola ujian siswa.
+          Satu platform terintegrasi untuk sistem informasi manajeman sekolah.
         </p>
         
         

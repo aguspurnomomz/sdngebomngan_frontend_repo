@@ -64,6 +64,15 @@ export default function AdminSchoolLoginPage() {
             </p>
           </div>
 
+          <div className="mt-4 text-center">
+            <a
+              href="https://sdngembongan.id/"
+              className="text-xs text-tp-muted hover:text-tp-green transition-colors"
+            >
+              Kembali ke Halaman Utama
+            </a>
+          </div>
+
           {/** matikan dulu ini */}
           {/* <div className="mt-4 text-center">
             <Link
