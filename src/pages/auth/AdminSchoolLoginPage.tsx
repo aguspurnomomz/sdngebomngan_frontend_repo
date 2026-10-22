@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import LoginBanner from './components/LoginBanner'
 import EmailPasswordForm from './components/EmailPasswordForm'
+import CrispChat from '../../components/CrispChat' 
 
 export default function AdminSchoolLoginPage() {
   const [email, setEmail] = useState('')
@@ -26,6 +27,11 @@ export default function AdminSchoolLoginPage() {
 
   return (
     <div className="flex min-h-screen items-start justify-center bg-tp-bg p-3 sm:items-center sm:p-6 bg-[radial-gradient(ellipse_at_0%_0%,rgba(125,211,167,0.25),transparent_50%),radial-gradient(ellipse_at_100%_100%,rgba(15,76,54,0.12),transparent_45%)]">
+      
+      {/* --- CRISP LIVE CHAT --- */}
+      {/* Widget chat akan muncul melayang di pojok kanan bawah halaman ini */}
+      <CrispChat />
+
       <div className="grid w-full max-w-[920px] my-auto overflow-hidden rounded-3xl border border-tp-border bg-white shadow-tp-md md:grid-cols-2">
         <LoginBanner />
 
@@ -55,7 +61,6 @@ export default function AdminSchoolLoginPage() {
             submitLabel="Masuk ke Portal Admin"
             loadingLabel="Memproses..."
             showForgotPassword
-
           />
 
           <div className="mt-5 pt-4 border-t border-tp-border">
@@ -69,7 +74,7 @@ export default function AdminSchoolLoginPage() {
               href="https://sdngembongan.id/"
               className="text-xs text-tp-muted hover:text-tp-green transition-colors"
             >
-              Kembali ke Halaman Utama
+              ← Kembali ke Halaman Utama
             </a>
           </div>
 

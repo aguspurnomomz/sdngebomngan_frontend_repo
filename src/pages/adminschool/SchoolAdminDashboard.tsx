@@ -3,6 +3,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import skoolagoIcon from '../../assets/logo-new-version.png'
 import sdngembonganIcon from '../../assets/logo_gembongan.png'
+import CrispChat from '../../components/CrispChat'
 import {
   Users, 
   Building2, 
@@ -219,6 +220,7 @@ export default function SchoolAdminDashboard({ session }: { session: any }) {
 
   return (
     <div className="flex min-h-screen bg-tp-bg">
+      <CrispChat />
       <button
         type="button"
         className={`fixed inset-0 z-40 border-0 bg-slate-900/40 p-0 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}
