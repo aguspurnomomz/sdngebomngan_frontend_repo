@@ -11,18 +11,24 @@ export default function AdminSchoolLoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [agreed, setAgreed] = useState(false)
+  const [loginError, setLoginError] = useState<string | null>(null)
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!agreed) return 
     setLoading(true)
+    setLoginError(null) // reset error
 
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw new Error(error.message)
       // Redirect ditangani oleh App.tsx via onAuthStateChange + check-role
     } catch (err: any) {
-      alert('Gagal login: ' + (err.message || 'Terjadi kesalahan'))
+      if (err.message === 'Invalid login credentials') {
+        setLoginError('Email atau password salah. Silakan coba lagi.')
+      } else {
+        setLoginError(err.message || 'Terjadi kesalahan')
+      }
     } finally {
       setLoading(false)
     }
@@ -51,11 +57,38 @@ export default function AdminSchoolLoginPage() {
             Gunakan email admin yang diberikan oleh administrator sistem.
           </p>
 
+          {/* ====== TAMPILAN ERROR LOGIN ====== */}
+          {loginError && (
+            <div className="mb-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="mt-0.5 h-4 w-4 shrink-0 text-red-500"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <p className="text-xs sm:text-sm leading-relaxed text-red-600">
+                {loginError}
+              </p>
+            </div>
+          )}
+
           <EmailPasswordForm
             email={email}
             password={password}
-            onEmailChange={setEmail}
-            onPasswordChange={setPassword}
+            onEmailChange={(v) => {
+              setEmail(v)
+              if (loginError) setLoginError(null) // hapus error saat user mulai mengetik
+            }}
+            onPasswordChange={(v) => {
+              setPassword(v)
+              if (loginError) setLoginError(null)
+            }}
             onSubmit={handleEmailLogin}
             submitDisabled={!agreed}
             loading={loading}
@@ -98,16 +131,6 @@ export default function AdminSchoolLoginPage() {
               </Link>
               {' '}
               SkoolaGo
-              {/* , dan{' '}
-              <Link
-                to="/disclaimer"
-                rel="noopener noreferrer"
-                className="font-medium text-tp-green hover:underline"
-                onClick={(e) => e.stopPropagation()}
-              >
-                Disclaimer
-              </Link>{' '}
-              TeachPartner. */}
             </label>
           </div>
 
