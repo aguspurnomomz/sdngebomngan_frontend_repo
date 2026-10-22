@@ -1,17 +1,20 @@
 import React, { useState } from 'react'
-//import { Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import LoginBanner from './components/LoginBanner'
 import EmailPasswordForm from './components/EmailPasswordForm'
+
 import CrispChat from '../../components/CrispChat' 
 
 export default function AdminSchoolLoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [agreed, setAgreed] = useState(false)
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!agreed) return 
     setLoading(true)
 
     try {
@@ -28,8 +31,6 @@ export default function AdminSchoolLoginPage() {
   return (
     <div className="flex min-h-screen items-start justify-center bg-tp-bg p-3 sm:items-center sm:p-6 bg-[radial-gradient(ellipse_at_0%_0%,rgba(125,211,167,0.25),transparent_50%),radial-gradient(ellipse_at_100%_100%,rgba(15,76,54,0.12),transparent_45%)]">
       
-      {/* --- CRISP LIVE CHAT --- */}
-      {/* Widget chat akan muncul melayang di pojok kanan bawah halaman ini */}
       <CrispChat />
 
       <div className="grid w-full max-w-[920px] my-auto overflow-hidden rounded-3xl border border-tp-border bg-white shadow-tp-md md:grid-cols-2">
@@ -56,12 +57,59 @@ export default function AdminSchoolLoginPage() {
             onEmailChange={setEmail}
             onPasswordChange={setPassword}
             onSubmit={handleEmailLogin}
+            submitDisabled={!agreed}
             loading={loading}
             emailPlaceholder="nama@sekolah.sch.id"
             submitLabel="Masuk ke Portal Admin"
             loadingLabel="Memproses..."
             showForgotPassword
           />
+
+           {/* T&C checkbox — DI ATAS kedua tombol (Masuk & Google) */}
+          <div className="mt-4 flex items-start gap-2">
+            <input
+              type="checkbox"
+              id="terms-checkbox-guru"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-tp-border text-tp-green focus:ring-tp-green cursor-pointer"
+            />
+            <label
+              htmlFor="terms-checkbox-guru"
+              className="text-[11px] sm:text-xs text-tp-muted leading-relaxed select-none cursor-pointer"
+            >
+              Saya telah membaca dan menyetujui{' '}
+              <Link
+                to="/terms"
+                rel="noopener noreferrer"
+                className="font-medium text-tp-green hover:underline"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Syarat & Ketentuan
+              </Link>
+              , dan{' '}
+              <Link
+                to="/privacy"
+                rel="noopener noreferrer"
+                className="font-medium text-tp-green hover:underline"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Kebijakan Privasi
+              </Link>
+              {' '}
+              SkoolaGo
+              {/* , dan{' '}
+              <Link
+                to="/disclaimer"
+                rel="noopener noreferrer"
+                className="font-medium text-tp-green hover:underline"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Disclaimer
+              </Link>{' '}
+              TeachPartner. */}
+            </label>
+          </div>
 
           <div className="mt-5 pt-4 border-t border-tp-border">
             <p className="text-[11px] sm:text-xs text-tp-muted text-center leading-relaxed">

@@ -34,20 +34,19 @@ export default function TermsPage() {
             <h1 className="mt-1 mb-2 text-2xl font-bold tracking-tight text-tp-text sm:text-3xl">
               Syarat & Ketentuan
             </h1>
-            <p className="text-xs text-tp-faint">Berlaku sejak 14 Juli 2026</p>
+            <p className="text-xs text-tp-faint">Berlaku sejak 1 Agustus 2026</p>
           </div>
 
           <p className="text-sm text-tp-muted leading-relaxed">
-            Dokumen ini mengatur hubungan antara Anda sebagai Pengguna dan SkoolaGo sebagai pengelola. Dengan mendaftar dan menggunakan Layanan, Anda dianggap telah membaca, memahami, dan menyetujui seluruh ketentuan berikut.
+            Dokumen ini mengatur hubungan antara SDN Gembongan sebagai Pengguna dan SkoolaGo sebagai pengelola. Dengan menggunakan layanan ini, kami anggap pihak SDN Gembongan telah membaca, memahami dan menyetujui seluruh ketentuan berikut.
           </p>
 
           <div className="space-y-6 text-sm text-tp-muted leading-relaxed">
             <section className="space-y-2">
               <h2 className="text-base font-bold text-tp-text">1. Definisi</h2>
               <ul className="list-disc pl-5 space-y-1.5">
-                <li><strong className="text-tp-text">"Layanan"</strong> berarti aplikasi web SkoolaGo yang dikelola oleh Divisi Teknologi dan Inforamasi SkoolaGo, mencakup semua modul AI untuk pembuatan perangkat pembelajaran (CP, TP, ATP, Modul Ajar, LKPD, Bank Soal, dan modul lainnya).</li>
-                <li><strong className="text-tp-text">"Pengguna"</strong> adalah setiap individu yang mendaftar, mengakses, atau menggunakan Layanan, terutama guru dan tenaga kependidikan di Indonesia.</li>
-                <li><strong className="text-tp-text">"Token"</strong> adalah satuan kredit internal yang digunakan untuk mengakses fitur generasi AI di dalam Layanan.</li>
+                <li><strong className="text-tp-text">"Layanan"</strong> berarti aplikasi Portal Pendidikan yang kami kembangkan dapat digunakan sepenuhnya oleh seluruh civitas di SDN Gembongan</li>
+                <li><strong className="text-tp-text">"Pengguna"</strong> adalah setiap individu yang mengakses, atau menggunakan Layanan Portal Pendidikan, terutama guru dan siswa di lingkup SDN Gembongan.</li>
               </ul>
             </section>
 
@@ -57,26 +56,25 @@ export default function TermsPage() {
                 <li>Pengguna wajib mendaftar dengan data yang benar dan akurat (nama, email, dan informasi sekolah).</li>
                 <li>Satu akun hanya untuk satu orang. Dilarang membagikan akun atau menjual akses akun ke pihak lain.</li>
                 <li>Pengguna bertanggung jawab penuh atas keamanan kata sandi dan seluruh aktivitas di dalam akunnya.</li>
-                <li>SkoolaGo berhak menonaktifkan akun yang terbukti disalahgunakan tanpa pengembalian dana.</li>
+                <li>SkoolaGo berhak menonaktifkan akun yang terbukti disalahgunakan.</li>
               </ul>
             </section>
 
             <section className="space-y-2">
               <h2 className="text-base font-bold text-tp-text">3. Lisensi Pemakaian</h2>
               <p>
-                SkoolaGo memberikan lisensi terbatas, non-eksklusif, dan tidak dapat dialihkan kepada Pengguna untuk menggunakan Layanan sesuai peruntukannya, yaitu membantu penyusunan perangkat pembelajaran.
+                SkoolaGo memberikan lisensi penuh, eksklusif untuk menggunakan Layanan sesuai peruntukannya, yaitu membantu penyusunan perangkat pembelajaran dan sistem informasi manajemen sekolah.
               </p>
               <p className="mt-2">
-                Dokumen yang dihasilkan (DOCX/output AI) boleh digunakan, diedit, dan dicetak oleh Pengguna untuk keperluan mengajar di institusinya sendiri.
+                Dokumen yang dihasilkan boleh digunakan, diedit dan dicetak oleh Pengguna untuk keperluan mengajar di institusinya sendiri (SDN Gembongan).
               </p>
             </section>
 
             <section className="space-y-2">
               <h2 className="text-base font-bold text-tp-text">4. Larangan</h2>
               <ul className="list-disc pl-5 space-y-1.5">
-                <li>Menggunakan Layanan untuk tujuan melanggar hukum, SARA, pornografi, atau kekerasan.</li>
-                <li>Melakukan reverse engineering, scraping massal, atau mengekstrak prompt/sistem AI di balik Layanan.</li>
-                <li>Menjual kembali output AI atas nama produk lain tanpa penambahan nilai edukatif yang signifikan.</li>
+                <li>Menggunakan Layanan untuk tujuan melanggar hukum dan scam</li>
+                <li>Melakukan reverse engineering, scraping massal di balik Layanan.</li>
                 <li>Menggunakan Layanan untuk membuat soal ujian nasional/terstandarisasi resmi tanpa verifikasi otoritas berwenang.</li>
               </ul>
             </section>
@@ -84,36 +82,33 @@ export default function TermsPage() {
             <section className="space-y-2">
               <h2 className="text-base font-bold text-tp-text">5. Hak Kekayaan Intelektual</h2>
               <p>
-                Seluruh kode, desain, prompt engineering, dan sistem SkoolaGo merupakan milik SkoolaGo dan dilindungi hukum.
+                Seluruh kode, desain dan sistem Portal Pendidikan ini merupakan milik SkoolaGo dan dilindungi hukum.
               </p>
               <p className="mt-2">
-                Output AI (dokumen yang di-generate) menjadi hak Pengguna sepenuhnya untuk keperluan mengajar, namun SkoolaGo tidak menjamin keunikan absolut karena AI dapat menghasilkan struktur serupa untuk input yang mirip.
+                Output (dokumen) menjadi hak Pengguna sepenuhnya untuk keperluan mengajar.
               </p>
             </section>
 
             <section className="space-y-2">
               <h2 className="text-base font-bold text-tp-text">6. Pembatasan Tanggung Jawab</h2>
               <p>
-                Layanan diberikan "as-is". SkoolaGo tidak menjamin akurasi 100% output AI dan tidak bertanggung jawab atas konsekuensi penggunaan output tanpa verifikasi.
-              </p>
-              <p className="mt-2">
-                Total tanggung jawab SkoolaGo atas klaim apa pun dibatasi maksimum sebesar nilai token yang belum terpakai di akun Pengguna.
+                SkoolaGo memberikan layanan penuh Portal Pendidikan untuk dapat digunakan dengan sebaik mungkin, apabila ada permintaan dan kustomisasi pada sistem dapat dikonsultasikan dengan tim terkait.
               </p>
             </section>
 
             <section className="space-y-2">
               <h2 className="text-base font-bold text-tp-text">7. Perubahan Ketentuan</h2>
               <p>
-                SkoolaGo dapat memperbarui Syarat & Ketentuan sewaktu-waktu. Perubahan material akan diumumkan melalui email atau notifikasi di aplikasi. Melanjutkan penggunaan setelah perubahan berarti Pengguna menerima ketentuan baru.
+                SkoolaGo dapat memperbarui Syarat & Ketentuan sewaktu-waktu. Perubahan material akan diumumkan melalui email atau notifikasi di aplikasi. Melanjutkan penggunaan setelah perubahan berarti Pengguna (SDN Gembongan) menerima ketentuan baru.
               </p>
             </section>
 
-            <section className="space-y-2">
+            {/* <section className="space-y-2">
               <h2 className="text-base font-bold text-tp-text">8. Hukum yang Berlaku</h2>
               <p>
-                Syarat & Ketentuan ini tunduk pada hukum Republik Indonesia. Segala sengketa diselesaikan terlebih dahulu secara musyawarah, dan bila tidak tercapai, melalui pengadilan yang berwenang di Indonesia.
+                Syarat & Ketentuan ini tunduk pada hukum di Republik Indonesia. Segala sengketa diselesaikan terlebih dahulu secara musyawarah dan bila tidak tercapai, dapat dilanjutkan melalui kewenangan hukum yang berlaku.
               </p>
-            </section>
+            </section> */}
 
             {/* Kotak Kontak */}
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 text-xs space-y-1">
@@ -132,8 +127,8 @@ export default function TermsPage() {
               <span className="font-medium text-tp-text">Syarat & Ketentuan</span>
               <span>•</span>
               <Link to="/privacy" className="hover:underline">Kebijakan Privasi</Link>
-              <span>•</span>
-              <Link to="/disclaimer" className="hover:underline">Disclaimer</Link>
+              {/* <span>•</span>
+              <Link to="/disclaimer" className="hover:underline">Disclaimer</Link> */}
             </div>
           </div>
         </div>

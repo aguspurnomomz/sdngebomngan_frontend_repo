@@ -34,21 +34,21 @@ export default function PrivacyPage() {
             <h1 className="mt-1 mb-2 text-2xl font-bold tracking-tight text-tp-text sm:text-3xl">
               Kebijakan Privasi
             </h1>
-            <p className="text-xs text-tp-faint">Berlaku sejak 14 Juli 2026</p>
+            <p className="text-xs text-tp-faint">Berlaku sejak 1 Agustus 2026</p>
           </div>
 
           <p className="text-sm text-tp-muted leading-relaxed">
-            Kami menghargai privasi Anda. Kebijakan ini menjelaskan data apa yang kami kumpulkan, bagaimana kami menggunakannya, dan hak Anda atas data tersebut.
+            Kami menghargai privasi Anda. Kebijakan ini menjelaskan data apa yang kami kumpulkan, bagaimana kami menggunakannya dan hak Anda atas data tersebut.
           </p>
 
           <div className="space-y-6 text-sm text-tp-muted leading-relaxed">
             <section className="space-y-2">
               <h2 className="text-base font-bold text-tp-text">1. Data yang Kami Kumpulkan</h2>
               <ul className="list-disc pl-5 space-y-1.5">
-                <li><strong className="text-tp-text">Data akun:</strong> nama, alamat email, dan kata sandi (terenkripsi).</li>
-                <li><strong className="text-tp-text">Data profil sekolah:</strong> nama sekolah, NIP/NIK guru, mata pelajaran, kelas, dan jenjang (opsional).</li>
-                <li><strong className="text-tp-text">Konten yang Anda buat:</strong> dokumen hasil generate AI, CP/TP/ATP tersimpan, dan konfigurasi modul.</li>
-                <li><strong className="text-tp-text">Data pembayaran:</strong> Order ID dan status transaksi (kami tidak menyimpan nomor kartu).</li>
+                <li><strong className="text-tp-text">Data akun:</strong> nama, NIK/NIP, alamat email, nomor whatsapp dan aata sandi (terenkripsi).</li>
+                <li><strong className="text-tp-text">Data profil sekolah:</strong> nama sekolah, NPSN, alamat sekolah, email sekolah, website sekolah, telepon sekolah dan jenjang (opsional).</li>
+                <li><strong className="text-tp-text">Konten sekolah:</strong> jenjang, manajemen kelas, data siswa dan data guru</li>
+                <li><strong className="text-tp-text">Data Ujian:</strong> soal ujian, kunci jawaban dan nilai</li>
                 <li><strong className="text-tp-text">Data teknis:</strong> alamat IP, jenis browser, dan log penggunaan untuk keperluan keamanan dan analitik.</li>
               </ul>
             </section>
@@ -56,9 +56,9 @@ export default function PrivacyPage() {
             <section className="space-y-2">
               <h2 className="text-base font-bold text-tp-text">2. Tujuan Penggunaan Data</h2>
               <ul className="list-disc pl-5 space-y-1.5">
-                <li>Menjalankan dan meningkatkan Layanan (autentikasi, penyimpanan dokumen, personalisasi output AI).</li>
-                <li>Memproses pembelian token dan verifikasi pembayaran.</li>
-                <li>Mengirim notifikasi penting seputar akun, pembaruan, atau promosi (bisa di-opt-out).</li>
+                <li>Menjalankan dan meningkatkan Layanan (autentikasi, penyimpanan dokumen dan personalisasi).</li>
+                <li>Memproses pembuatan manajemen kelas, manajemen mapel, jadwal pelajaran dan pembuatan soal ujian.</li>
+                <li>Mengirim notifikasi penting seputar akun dan pembaruan</li>
                 <li>Analitik agregat untuk memahami pola pemakaian tanpa mengidentifikasi individu.</li>
               </ul>
             </section>
@@ -67,24 +67,25 @@ export default function PrivacyPage() {
               <h2 className="text-base font-bold text-tp-text">3. Pihak Ketiga</h2>
               <p>Kami bekerja sama dengan penyedia teknologi berikut untuk menjalankan Layanan:</p>
               <ul className="list-disc pl-5 space-y-1.5 mt-1">
-                <li><strong className="text-tp-text">Google Gemini</strong> — untuk memproses permintaan generasi teks dan gambar AI.</li>
-                <li><strong className="text-tp-text">Midtrans</strong> — untuk memproses pembayaran token secara aman.</li>
                 <li><strong className="text-tp-text">Penyedia cloud & database</strong> — untuk menyimpan data akun dan dokumen Anda.</li>
-                <li><strong className="text-tp-text">Prompt AI:</strong> Prompt yang Anda kirim ke AI dapat diproses oleh penyedia model AI sesuai kebijakan privasi mereka masing-masing. Hindari memasukkan data pribadi siswa (NISN, nilai individu bernama, dsb.) ke dalam prompt.</li>
+                <li><strong className="text-tp-text">Crisp Live chat:</strong> Agent customer service yang menangani terkait pertanyaan maupun komplain seputar layanan dan sistem</li>
+                <li><strong className="text-tp-text">Fonnte :</strong> Agent pengiriman pesan notifikasi Whatsapp</li>
+                <li><strong className="text-tp-text">Resend:</strong> Sebagai penyedia pengiriman email untuk lupa password maupun promo, pengumunan dan berita terkait SkoolaGo</li>
+                <li><strong className="text-tp-text">Google platform:</strong> Untuk login auth menggunakan akun google </li>
               </ul>
             </section>
 
             <section className="space-y-2">
               <h2 className="text-base font-bold text-tp-text">4. Penyimpanan & Retensi</h2>
               <p>
-                Data akun dan dokumen disimpan selama akun aktif. Anda dapat meminta penghapusan akun kapan saja melalui kontak resmi; data akan dihapus dalam 30 hari kerja, kecuali data yang wajib disimpan oleh peraturan perpajakan/hukum yang berlaku.
+                Data akun dan dokumen disimpan selama akun aktif pada database kami, melalui enkripsi dan keamanan ketat. Anda dapat meminta penghapusan akun kapan saja melalui kontak resmi SkoolaGo, data akan dihapus dalam 30 hari kerja, kecuali data yang wajib disimpan oleh peraturan hukum yang berlaku.
               </p>
             </section>
 
             <section className="space-y-2">
               <h2 className="text-base font-bold text-tp-text">5. Keamanan</h2>
               <p>
-                Kami menggunakan enkripsi in-transit (HTTPS), otentikasi berbasis token, dan Row-Level Security pada database. Namun, tidak ada sistem yang sepenuhnya bebas risiko — Pengguna wajib menjaga kerahasiaan kredensial akunnya.
+                Kami menggunakan enkripsi in-transit (HTTPS), otentikasi berbasis token, dan Row-Level Security pada database. Namun, tidak ada sistem yang sepenuhnya bebas risiko  Pengguna wajib menjaga kerahasiaan kredensial akunnya.
               </p>
             </section>
 
@@ -122,8 +123,8 @@ export default function PrivacyPage() {
               <Link to="/terms" className="hover:underline">Syarat & Ketentuan</Link>
               <span>•</span>
               <Link to="/privacy" className="font-medium text-tp-text">Kebijakan Privasi</Link>
-              <span>•</span>
-              <Link to="/disclaimer" className="hover:underline">Disclaimer</Link>
+              {/* <span>•</span>
+              <Link to="/disclaimer" className="hover:underline">Disclaimer</Link> */}
             </div>
           </div>
         </div>
