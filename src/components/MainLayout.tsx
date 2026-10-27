@@ -30,7 +30,6 @@ type MainLayoutProps = {
   schoolMemberships?: Membership[]
 }
 
-// [FIX] Tipe menu eksplisit supaya TS tidak komplain saat spread conditional
 type MenuChild = {
   path: string
   label: string
@@ -60,14 +59,16 @@ export default function MainLayout({
 
   const { hasPermission } = useAuth()
 
-  // [FIX] Menu grup dengan tipe eksplisit + menu "Kelola Ujian"
+  // === MENU BARU ===
+  // 1. "Beranda" dikeluarkan menjadi menu tersendiri
+  // 2. "Menu Utama" diganti menjadi "Referensi Mengajar" (isinya E-Book)
+  // 3. "Kelola Ujian" tetap dipertahankan
   const groupedMenu: MenuGroup[] = [
     {
-      key: 'guru',
-      label: 'Menu Utama',
-      icon: <LayoutDashboard size={18} />,
+      key: 'referensi',
+      label: 'Referensi Mengajar',
+      icon: <BookOpen size={18} />,
       children: [
-        { path: '/', label: 'Beranda', icon: <LayoutDashboard size={14} /> },
         { path: '/ebooks', label: 'Referensi E-Book', icon: <BookOpen size={14} /> },
       ],
     },
@@ -84,7 +85,6 @@ export default function MainLayout({
           },
         ]
       : []),
-    // [FIX] Menu Kelola Ujian — sama seperti di Admin Sekolah
     ...(hasPermission('exam.read')
       ? [
           {
@@ -104,7 +104,7 @@ export default function MainLayout({
       : []),
   ]
 
-  const [expandedMenus, setExpandedMenus] = useState<string[]>(['guru'])
+  const [expandedMenus, setExpandedMenus] = useState<string[]>([])
 
   const toggleMenu = (key: string) => {
     setExpandedMenus((prev) =>
@@ -117,6 +117,10 @@ export default function MainLayout({
     const p = location.pathname
     const toOpen: string[] = []
 
+    // Jika di halaman ebooks, buka menu referensi
+    if (p.startsWith('/ebooks')) {
+      toOpen.push('referensi')
+    }
     if (p.startsWith('/exams') || p.startsWith('/exam-schedules')) {
       toOpen.push('ujian')
     }
@@ -158,6 +162,12 @@ export default function MainLayout({
 
   const closeSidebar = () => setSidebarOpen(false)
 
+  // Helper untuk mendeteksi path aktif (termasuk child path)
+  const isPathUnder = (base: string) =>
+    base === '/' 
+      ? location.pathname === '/' 
+      : location.pathname === base || location.pathname.startsWith(base + '/')
+
   return (
     <div className="flex min-h-screen bg-tp-bg">
       <CrispChat />
@@ -189,10 +199,28 @@ export default function MainLayout({
         </div>
 
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">
+          
+          {/* === MENU BERANDA (Dikeluarkan dari grup) === */}
+          <button
+            type="button"
+            className={`relative flex w-full items-center gap-3 rounded-[10px] px-3 py-[11px] text-left text-sm transition mb-1 ${
+              location.pathname === '/'
+                ? 'font-semibold text-tp-green bg-tp-green/5'
+                : 'font-medium text-tp-muted hover:bg-tp-green/5 hover:text-tp-text'
+            }`}
+            onClick={() => {
+              navigate('/')
+              closeSidebar()
+            }}
+          >
+            <LayoutDashboard size={18} />
+            Beranda
+          </button>
+
+          {/* === MENU GROUP LAINNYA === */}
           {groupedMenu.map((item) => {
             const isExpanded = expandedMenus.includes(item.key)
-            const hasActiveChild =
-              item.children?.some((c) => location.pathname === c.path) ?? false
+            const hasActiveChild = item.children?.some((c) => isPathUnder(c.path)) ?? false
 
             return (
               <div key={item.key}>
@@ -213,7 +241,7 @@ export default function MainLayout({
                 {isExpanded && (
                   <div className="ml-3 mt-1 flex flex-col gap-0.5 border-l border-tp-border pl-2">
                     {item.children?.map((child) => {
-                      const childActive = location.pathname === child.path
+                      const childActive = isPathUnder(child.path)
                       return (
                         <button
                           key={child.path}

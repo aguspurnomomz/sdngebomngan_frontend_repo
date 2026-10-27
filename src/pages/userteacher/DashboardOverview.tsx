@@ -1,7 +1,13 @@
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, ArrowUp, Video, Pause, Square} from 'lucide-react'
+import { 
+  //Plus, 
+  ArrowUp, 
+  Video, 
+  Pause, 
+  Square
+} from 'lucide-react'
 
 const weekBars = [
   { day: 'S', height: 42, muted: true },
@@ -70,7 +76,7 @@ export default function DashboardOverview({ tokenBalance }: { tokenBalance: numb
           </p>
         </div>
         <div className="flex w-full flex-wrap gap-2.5 sm:w-auto">
-          <Button
+          {/* <Button
             type="button"
             className="flex-1 bg-tp-green hover:bg-tp-green-hover text-white gap-2 rounded-xl sm:flex-none"
             onClick={() => navigate('/question-bank')}
@@ -84,7 +90,7 @@ export default function DashboardOverview({ tokenBalance }: { tokenBalance: numb
             onClick={() => navigate('/profile')}
           >
             Atur Identitas
-          </Button>
+          </Button> */}
         </div>
       </div>
 
@@ -217,7 +223,7 @@ export default function DashboardOverview({ tokenBalance }: { tokenBalance: numb
         <Card className="rounded-2xl border-tp-border shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <CardTitle className="text-base font-bold text-tp-text">Proyek</CardTitle>
-            <Button
+            {/* <Button
               type="button"
               variant="outline"
               size="sm"
@@ -225,7 +231,7 @@ export default function DashboardOverview({ tokenBalance }: { tokenBalance: numb
               onClick={() => navigate('/question-bank')}
             >
               + Baru
-            </Button>
+            </Button> */}
           </CardHeader>
           <CardContent>
             <div className="flex flex-col gap-3.5">
