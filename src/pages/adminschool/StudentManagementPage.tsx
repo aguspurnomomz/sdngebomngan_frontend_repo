@@ -247,7 +247,7 @@ export default function StudentManagementPage() {
             full_name: formFullName.trim(),
             student_number: formStudentNumber.trim(),
             nisn: formNISN.trim(),
-            jenis_kelamin: formJenisKelamin,   // ✅ TAMBAHKAN INI
+            jenis_kelamin: formJenisKelamin,  
             class_sub_group_id: formSubClassId,
           },
           { headers: { Authorization: `Bearer ${token}` } }
@@ -349,14 +349,11 @@ export default function StudentManagementPage() {
     )
   })
 
-  // Total halaman berdasarkan hasil filter (bukan data mentah)
   const totalPages = Math.ceil(filteredStudents.length / ITEMS_PER_PAGE)
 
-  // Hitung index awal dan akhir untuk data yang ditampilkan
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
   const endIndex = startIndex + ITEMS_PER_PAGE
 
-  // Potong array sesuai halaman aktif
   const paginatedStudents = filteredStudents.slice(startIndex, endIndex)
 
 

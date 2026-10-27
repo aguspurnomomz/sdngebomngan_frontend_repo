@@ -11,6 +11,7 @@ import {
   UserPlus, 
   Search,
   BookOpen,
+  ShieldCheck,
   Pencil
 } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
@@ -48,6 +49,7 @@ export default function TeacherManagementPage() {
   const [formEmail, setFormEmail] = useState('')
   const [formNIP, setFormNIP] = useState('')
   const [formJenisKelamin, setFormJenisKelamin] = useState('')
+  const [formWhatsApp, setFormWhatsApp] = useState('')
   const [formRole, setFormRole] = useState('teacher')
   const [formNotes, setFormNotes] = useState('')
   const [formSubmitting, setFormSubmitting] = useState(false)
@@ -59,6 +61,8 @@ export default function TeacherManagementPage() {
   const [editNama, setEditNama] = useState('')
   const [editNIP, setEditNIP] = useState('')
   const [editJenisKelamin, setEditJenisKelamin] = useState('')
+  const [editWhatsApp, setEditWhatsApp] = useState('') 
+  const [editRole, setEditRole] = useState('')   
   const [editSubmitting, setEditSubmitting] = useState(false)
   const [editError, setEditError] = useState('')
 
@@ -72,7 +76,22 @@ export default function TeacherManagementPage() {
  const [subjectModalSaving, setSubjectModalSaving] = useState(false)
  const [subjectModalError, setSubjectModalError] = useState('')
 
+  // State untuk Atur Peran (Multi-Role)
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false)
+  const [roleTeacher, setRoleTeacher] = useState<Teacher | null>(null)
+  const [teacherCurrentRoles, setTeacherCurrentRoles] = useState<any[]>([])
+  const [roleModalLoading, setRoleModalLoading] = useState(false)
+  const [roleModalSaving, setRoleModalSaving] = useState(false)
+  const [roleModalError, setRoleModalError] = useState('')
+
+  // State untuk form assign role baru
+  const [newRoleCode, setNewRoleCode] = useState('')
+  const [newRoleClassID, setNewRoleClassID] = useState('')
+  const [availableClasses, setAvailableClasses] = useState<any[]>([])
+
   const API_URL = import.meta.env.VITE_API_URL as string
+
+  const [schoolRoles, setSchoolRoles] = useState<{ code: string; label: string }[]>([])
 
   const getAuthToken = async (): Promise<string | null> => {
     const { data: { session } } = await supabase.auth.getSession()
@@ -107,7 +126,45 @@ export default function TeacherManagementPage() {
     }
   }, [API_URL])
 
-  useEffect(() => { fetchTeachers() }, [fetchTeachers])
+  const fetchSchoolRoles = useCallback(async () => {
+    try {
+      const token = await getAuthToken()
+      if (!token) return
+      
+      const res = await axios.get(`${API_URL}/api/school-admin/school-roles`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      
+      const roles = res.data?.roles ?? []
+      setSchoolRoles(roles)
+      
+
+      if (roles.length > 0) {
+        setFormRole((prev) =>
+          roles.some((r: any) => r.code === prev) ? prev : roles[0].code
+        )
+      }
+    } catch (err) {
+      console.error('[Roles] Gagal fetch:', err)
+      setSchoolRoles([
+        { code: 'teacher', label: 'Guru' },
+        { code: 'homeroom_teacher', label: 'Wali Kelas' },
+        { code: 'vice_principal', label: 'Wakil Kepala Sekolah' },
+      ])
+    }
+  }, [API_URL])
+
+  const getRoleLabel = (code: string) => {
+    if (!code) return '-'
+    const role = schoolRoles.find((r) => r.code === code)
+    // Jika ketemu kembalikan label, jika tidak kembalikan code-nya (fallback)
+    return role ? role.label : code 
+  }
+
+  useEffect(() => {
+    fetchTeachers()
+    fetchSchoolRoles()
+  }, [fetchTeachers, fetchSchoolRoles])
 
   useEffect(() => {
     setCurrentPage(1)
@@ -119,6 +176,7 @@ export default function TeacherManagementPage() {
     setFormPassword('') 
     setFormNIP('')
     setFormJenisKelamin('')
+    setFormWhatsApp('')
     setFormRole('teacher')
     setFormNotes('')
     setFormError('')
@@ -127,73 +185,74 @@ export default function TeacherManagementPage() {
   }
 
   const handleSubmitTeacher = async (e: React.FormEvent) => {
-  e.preventDefault()
+    e.preventDefault()
 
-  // Validasi
-  if (!formFullName.trim() || !formEmail.trim()) {
-    setFormError('Nama dan email wajib diisi.')
-    return
-  }
-  if (!formPassword || formPassword.length < 6) {
-    setFormError('Password wajib diisi, minimal 6 karakter.')
-    return
-  }
-
-  setFormSubmitting(true)
-  setFormError('')
-
-  try {
-    const token = await getAuthToken()
-    if (!token) { setFormError('Sesi login tidak ditemukan.'); return }
-
-    // ✅ Endpoint baru: /teachers (bukan /invite)
-    const res = await axios.post(
-      `${API_URL}/api/school-admin/teachers`,
-      {
-        email: formEmail.trim().toLowerCase(),
-        full_name: formFullName.trim(),
-        password: formPassword,             
-        nip: formNIP.trim(),
-        jenis_kelamin: formJenisKelamin,
-        role_in_school: formRole,
-        notes: formNotes.trim(),
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
-
-    // ==========================================
-    // Handler response
-    // ==========================================
-    if (res.data?.is_new_user === false) {
-      // Kasus: email sudah terdaftar di sistem, tapi belum jadi member sekolah ini
-      showSuccess(
-        'Guru sudah punya akun SkoolaGo. Berhasil ditambahkan ke sekolah tanpa akun baru.'
-      )
-      setIsModalOpen(false)
-      await fetchTeachers()
+    // Validasi
+    if (!formFullName.trim() || !formEmail.trim()) {
+      setFormError('Nama dan email wajib diisi.')
+      return
+    }
+    if (!formPassword || formPassword.length < 6) {
+      setFormError('Password wajib diisi, minimal 6 karakter.')
       return
     }
 
-    // Kasus: user baru berhasil dibuat → tampilkan password untuk di-share
-    if (res.data?.password) {
-      setTempPasswordInfo({
-        email: res.data.email,
-        password: res.data.password,
-      })
-      showSuccess('Guru berhasil ditambahkan. Salin password untuk diberikan ke guru.')
-    } else {
-      showSuccess('Guru berhasil ditambahkan ke sekolah.')
-      setIsModalOpen(false)
-    }
+    setFormSubmitting(true)
+    setFormError('')
 
-    await fetchTeachers()
-  } catch (error: any) {
-    const msg = error.response?.data?.error || error.message || 'Terjadi kesalahan.'
-    setFormError(msg)
-  } finally {
-    setFormSubmitting(false)
+    try {
+      const token = await getAuthToken()
+      if (!token) { setFormError('Sesi login tidak ditemukan.'); return }
+
+
+      const res = await axios.post(
+        `${API_URL}/api/school-admin/teachers`,
+        {
+          email: formEmail.trim().toLowerCase(),
+          full_name: formFullName.trim(),
+          password: formPassword,             
+          nip: formNIP.trim(),
+          jenis_kelamin: formJenisKelamin,
+          no_whatsapp: formWhatsApp.trim(),
+          role_in_school: formRole,
+          notes: formNotes.trim(),
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+
+      // ==========================================
+      // Handler response
+      // ==========================================
+      if (res.data?.is_new_user === false) {
+        // Kasus: email sudah terdaftar di sistem, tapi belum jadi member sekolah ini
+        showSuccess(
+          'Guru sudah punya akun SkoolaGo. Berhasil ditambahkan ke sekolah tanpa akun baru.'
+        )
+        setIsModalOpen(false)
+        await fetchTeachers()
+        return
+      }
+
+      // Kasus: user baru berhasil dibuat → tampilkan password untuk di-share
+      if (res.data?.password) {
+        setTempPasswordInfo({
+          email: res.data.email,
+          password: res.data.password,
+        })
+        showSuccess('Guru berhasil ditambahkan. Salin password untuk diberikan ke guru.')
+      } else {
+        showSuccess('Guru berhasil ditambahkan ke sekolah.')
+        setIsModalOpen(false)
+      }
+
+      await fetchTeachers()
+    } catch (error: any) {
+      const msg = error.response?.data?.error || error.message || 'Terjadi kesalahan.'
+      setFormError(msg)
+    } finally {
+      setFormSubmitting(false)
+    }
   }
-}
 
   const handleRemoveTeacher = async (membershipId: string, name: string) => {
     if (!confirm(`Yakin ingin mengeluarkan ${name} dari sekolah?`)) return
@@ -222,6 +281,8 @@ export default function TeacherManagementPage() {
     setEditNama(teacher.nama_guru)
     setEditNIP(teacher.nip_guru || '')
     setEditJenisKelamin(teacher.jenis_kelamin || '')
+    setEditWhatsApp((teacher as any).no_whatsapp || '') 
+    setEditRole(teacher.role_in_school || 'teacher')
     setEditError('')
     setIsEditModalOpen(true)
   }
@@ -243,6 +304,8 @@ export default function TeacherManagementPage() {
           nama_guru: editNama.trim(),
           nip: editNIP.trim(),
           jenis_kelamin: editJenisKelamin,
+          no_whatsapp: editWhatsApp.trim(), 
+          role_in_school: editRole, 
         },
         { headers: { Authorization: `Bearer ${token}` } }
       )
@@ -255,6 +318,103 @@ export default function TeacherManagementPage() {
       setEditError(msg)
     } finally {
       setEditSubmitting(false)
+    }
+  }
+
+  const handleOpenRoleModal = async (t: Teacher) => {
+    setRoleTeacher(t)
+    setRoleModalLoading(true)
+    setRoleModalError('')
+    setNewRoleCode('')
+    setNewRoleClassID('')
+    
+    try {
+      const token = await getAuthToken()
+      if (!token) return
+
+      // 1. Fetch role yang sudah dimiliki guru ini
+      const assignedRes = await axios.get(
+        `${API_URL}/api/school-admin/teachers/${t.teacher_id}/roles`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      setTeacherCurrentRoles(assignedRes.data?.roles ?? [])
+
+      // 2. Fetch semua kelas (untuk opsi scope jika role butuh class)
+      const classRes = await axios.get(`${API_URL}/api/school-admin/sub-classes`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setAvailableClasses(classRes.data?.sub_classes ?? [])
+
+      setIsRoleModalOpen(true)
+    } catch (err: any) {
+      setRoleModalError('Gagal memuat data peran.')
+    } finally {
+      setRoleModalLoading(false)
+    }
+  }
+
+  const handleAssignRole = async () => {
+    if (!roleTeacher || !newRoleCode) return
+    setRoleModalSaving(true)
+    setRoleModalError('')
+
+    try {
+      const token = await getAuthToken()
+      if (!token) return
+
+      // Cek apakah role ini butuh class_sub_group_id
+      //const selectedRoleDef = schoolRoles.find(r => r.code === newRoleCode)
+      // Asumsi: role 'homeroom_teacher' butuh class, selain itu tidak
+      const needsClass = newRoleCode === 'homeroom_teacher' 
+
+      if (needsClass && !newRoleClassID) {
+        setRoleModalError('Pilih kelas untuk peran Wali Kelas.')
+        setRoleModalSaving(false)
+        return
+      }
+
+      await axios.post(
+        `${API_URL}/api/school-admin/teachers/${roleTeacher.teacher_id}/roles`,
+        {
+          role_code: newRoleCode,
+          class_sub_group_id: needsClass ? newRoleClassID : '',
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+
+      showSuccess('Peran berhasil ditambahkan.')
+      // Refresh list role
+      const assignedRes = await axios.get(
+        `${API_URL}/api/school-admin/teachers/${roleTeacher.teacher_id}/roles`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      setTeacherCurrentRoles(assignedRes.data?.roles ?? [])
+      setNewRoleCode('')
+      setNewRoleClassID('')
+    } catch (err: any) {
+      setRoleModalError(err.response?.data?.error || 'Gagal assign peran.')
+    } finally {
+      setRoleModalSaving(false)
+    }
+  }
+
+  const handleRemoveRole = async (roleId: string) => {
+    if (!roleTeacher) return
+    if (!confirm('Yakin ingin mencabut peran ini?')) return
+
+    try {
+      const token = await getAuthToken()
+      if (!token) return
+
+      await axios.delete(
+        `${API_URL}/api/school-admin/teachers/${roleTeacher.teacher_id}/roles/${roleId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+
+      showSuccess('Peran berhasil dicabut.')
+      setTeacherCurrentRoles(prev => prev.filter(r => r.role_id !== roleId))
+    } catch (err: any) {
+      showError('Gagal mencabut peran.')
     }
   }
 
@@ -443,6 +603,7 @@ const handleToggleSubject = (subjectID: string) => {
                   <th className="py-3 px-4">L/P</th>
                   <th className="py-3 px-4">Email</th>
                   <th className="py-3 px-4">NIP</th>
+                  <th className="py-3 px-4">Peran</th>
                   <th className="py-3 px-4">Status</th>
                   <th className="py-3 px-4 text-right">Aksi</th>
                 </tr>
@@ -465,7 +626,13 @@ const handleToggleSubject = (subjectID: string) => {
                     </td>
                     <td className="py-3 px-4 text-xs">{t.email || '-'}</td>
                     <td className="py-3 px-4 text-xs font-mono">{t.nip_guru || '-'}</td>
-                   <td className="py-3 px-4">
+                    <td className="py-3 px-4">
+                      <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
+                        {getRoleLabel(t.role_in_school)}
+                      </span>
+                    </td>
+
+                    <td className="py-3 px-4">
                     {t.is_active ? (
                         <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">Aktif</span>
                     ) : (
@@ -474,7 +641,7 @@ const handleToggleSubject = (subjectID: string) => {
                     </td>
                     <td className="py-3 px-4 text-right">
                     <div className="flex items-center justify-end gap-1">
-                                          <td className="py-3 px-4 text-right">
+                    <td className="py-3 px-4 text-right">
                     <div className="flex items-center justify-end gap-1">
                       {/* Tombol Edit */}
                         <button
@@ -483,6 +650,13 @@ const handleToggleSubject = (subjectID: string) => {
                             title="Edit Data Guru"
                           >
                           <Pencil size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleOpenRoleModal(t)}
+                          className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors"
+                          title="Atur Peran (Wali Kelas, dll)"
+                        >
+                          <ShieldCheck size={14} /> {/* Pastikan import ShieldCheck dari lucide-react */}
                         </button>
                       </div>
                       </td>
@@ -834,6 +1008,16 @@ const handleToggleSubject = (subjectID: string) => {
                     />
                     </div>
                     <div>
+                    <label className="block text-xs font-semibold text-tp-muted mb-1">No. WhatsApp</label>
+                    <input
+                        type="tel"
+                        value={formWhatsApp}
+                        onChange={(e) => setFormWhatsApp(e.target.value)}
+                        placeholder="Contoh: 08123456789"
+                        className="w-full rounded-xl border border-tp-border px-3.5 py-2.5 text-sm outline-none focus:border-tp-green font-mono"
+                    />
+                    </div>
+                    <div>
                     <label className="block text-xs font-semibold text-tp-muted mb-1">Jenis Kelamin</label>
                     <div className="flex gap-2">
                         <button
@@ -866,13 +1050,19 @@ const handleToggleSubject = (subjectID: string) => {
                 <div>
                     <label className="block text-xs font-semibold text-tp-muted mb-1">Peran di Sekolah</label>
                     <select
-                    value={formRole}
-                    onChange={(e) => setFormRole(e.target.value)}
-                    className="w-full rounded-xl border border-tp-border px-3.5 py-2.5 text-sm outline-none focus:border-tp-green bg-white"
+                      value={formRole}
+                      onChange={(e) => setFormRole(e.target.value)}
+                      className="w-full rounded-xl border border-tp-border px-3.5 py-2.5 text-sm outline-none focus:border-tp-green bg-white"
                     >
-                    <option value="teacher">Guru</option>
-                    <option value="homeroom_teacher">Wali Kelas</option>
-                    <option value="vice_principal">Wakil Kepala Sekolah</option>
+                      {schoolRoles.length === 0 ? (
+                        <option value="">Memuat peran...</option>
+                      ) : (
+                        schoolRoles.map((r) => (
+                          <option key={r.code} value={r.code}>
+                            {r.label}
+                          </option>
+                        ))
+                      )}
                     </select>
                 </div>
 
@@ -967,6 +1157,16 @@ const handleToggleSubject = (subjectID: string) => {
                   />
                 </div>
                 <div>
+                  <label className="block text-xs font-semibold text-tp-muted mb-1">No. WhatsApp</label>
+                  <input
+                    type="tel"
+                    value={editWhatsApp}
+                    onChange={(e) => setEditWhatsApp(e.target.value)}
+                    placeholder="Contoh: 08123456789"
+                    className="w-full rounded-xl border border-tp-border px-3.5 py-2.5 text-sm outline-none focus:border-tp-green font-mono"
+                  />
+                </div>
+                <div>
                   <label className="block text-xs font-semibold text-tp-muted mb-1">Jenis Kelamin</label>
                   <div className="flex gap-2">
                     <button
@@ -994,6 +1194,24 @@ const handleToggleSubject = (subjectID: string) => {
                   </div>
                 </div>
               </div>
+              <div>
+                <label className="block text-xs font-semibold text-tp-muted mb-1">Peran di Sekolah</label>
+                <select
+                  value={editRole}
+                  onChange={(e) => setEditRole(e.target.value)}
+                  className="w-full rounded-xl border border-tp-border px-3.5 py-2.5 text-sm outline-none focus:border-tp-green bg-white"
+                >
+                  {schoolRoles.length === 0 ? (
+                    <option value="">Memuat peran...</option>
+                  ) : (
+                    schoolRoles.map((r) => (
+                      <option key={r.code} value={r.code}>
+                        {r.label}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
 
               <div className="flex justify-end gap-3 pt-2">
                 <button
@@ -1013,6 +1231,111 @@ const handleToggleSubject = (subjectID: string) => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Atur Peran */}
+      {isRoleModalOpen && roleTeacher && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-tp-border pb-3">
+              <div>
+                <h3 className="text-sm font-bold text-tp-text flex items-center gap-2">
+                  <ShieldCheck size={16} className="text-indigo-500" />
+                  Atur Peran
+                </h3>
+                <p className="text-[11px] text-tp-muted mt-0.5">{roleTeacher.nama_guru}</p>
+              </div>
+              <button onClick={() => setIsRoleModalOpen(false)} className="text-tp-muted hover:text-tp-text">
+                <X size={18} />
+              </button>
+            </div>
+
+            {roleModalError && (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+                {roleModalError}
+              </div>
+            )}
+
+            {roleModalLoading ? (
+              <p className="text-center text-xs text-tp-muted py-6">Memuat peran...</p>
+            ) : (
+              <>
+                {/* List Peran Aktif */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-semibold text-tp-muted uppercase">Peran Saat Ini</h4>
+                  {teacherCurrentRoles.length === 0 ? (
+                    <p className="text-xs text-tp-muted italic">Belum ada peran tambahan.</p>
+                  ) : (
+                    teacherCurrentRoles.map(r => (
+                      <div key={r.id} className="flex items-center justify-between p-3 rounded-xl border border-tp-border bg-white">
+                        <div>
+                          <div className="text-sm font-semibold text-tp-text">{r.label}</div>
+                          {r.class_sub_group_name && (
+                            <div className="text-[11px] text-tp-muted">Kelas: {r.class_sub_group_name}</div>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleRemoveRole(r.role_id)}
+                          className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg"
+                          title="Cabut Peran"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <hr className="border-tp-border" />
+
+                {/* Form Assign Peran Baru */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-semibold text-tp-muted uppercase">Tambah Peran Baru</h4>
+                  
+                  <div>
+                    <label className="block text-xs font-semibold text-tp-muted mb-1">Pilih Peran</label>
+                    <select
+                      value={newRoleCode}
+                      onChange={(e) => setNewRoleCode(e.target.value)}
+                      className="w-full rounded-xl border border-tp-border px-3.5 py-2.5 text-sm outline-none focus:border-tp-green bg-white"
+                    >
+                      <option value="">-- Pilih Peran --</option>
+                      {schoolRoles.map(r => (
+                        <option key={r.code} value={r.code}>{r.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Jika Role Butuh Kelas (contoh: homeroom_teacher) */}
+                  {newRoleCode === 'homeroom_teacher' && (
+                    <div>
+                      <label className="block text-xs font-semibold text-tp-muted mb-1">Pilih Kelas (Wajib)</label>
+                      <select
+                        value={newRoleClassID}
+                        onChange={(e) => setNewRoleClassID(e.target.value)}
+                        className="w-full rounded-xl border border-tp-border px-3.5 py-2.5 text-sm outline-none focus:border-tp-green bg-white"
+                      >
+                        <option value="">-- Pilih Kelas --</option>
+                        {availableClasses.map(c => (
+                          <option key={c.id} value={c.id}>{c.name} ({c.class_group_name})</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleAssignRole}
+                    disabled={roleModalSaving || !newRoleCode}
+                    className="w-full rounded-xl bg-indigo-500 px-4 py-2.5 text-xs font-semibold text-white hover:bg-indigo-600 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {roleModalSaving && <Loader2 size={14} className="animate-spin" />}
+                    {roleModalSaving ? 'Menyimpan...' : 'Tambah Peran'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

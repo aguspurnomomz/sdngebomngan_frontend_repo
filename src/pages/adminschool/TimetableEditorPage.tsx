@@ -3,6 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom'
 import axios from 'axios'
 import { supabase } from '../../lib/supabaseClient'
 import {
+  exportTimetableToExcel,
+  exportTimetableToPDF,
+} from '../../lib/exportHelpers'
+import {
   ArrowLeft,
   Save,
   Trash2,
@@ -13,6 +17,10 @@ import {
   BookOpen,
   UserCog,
   MapPin,
+  Coffee,
+  Check,
+  FileSpreadsheet,
+  FileText,
 } from 'lucide-react'
 
 const API_URL = import.meta.env.VITE_API_URL
@@ -74,9 +82,8 @@ type TimeSlot = {
   start_time: string
   end_time: string
   is_break: boolean
+  is_override?: boolean
 }
-
-
 
 export default function TimetableEditorPage() {
   const navigate = useNavigate()
@@ -111,7 +118,17 @@ export default function TimetableEditorPage() {
   // Validation
   const [validating, setValidating] = useState(false)
   const [conflicts, setConflicts] = useState<Conflict[] | null>(null)
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([])
+
+  // State untuk Time Slots
+  const [timeSlotsByDay, setTimeSlotsByDay] = useState<Record<string, TimeSlot[]>>({})
+  const [defaultTimeSlots, setDefaultTimeSlots] = useState<TimeSlot[]>([])
+
+  // State untuk Aktifasi Jadwal
+  const [activating, setActivating] = useState(false)
+
+  // ✅ FIX: State export dipindahkan ke dalam component
+  const [exportingExcel, setExportingExcel] = useState(false)
+  const [exportingPdf, setExportingPdf] = useState(false)
 
   const getToken = async () => {
     const {
@@ -142,7 +159,8 @@ export default function TimetableEditorPage() {
       setEntries(ttRes.data.entries || [])
       setSubjects(subjRes.data.subjects || [])
       setTeachers(teachRes.data.teachers || [])
-      setTimeSlots(ttRes.data.time_slots || [])
+      setDefaultTimeSlots(ttRes.data.time_slots || [])
+      setTimeSlotsByDay(ttRes.data.time_slots_by_day || {})
     } catch (err: any) {
       console.error('Gagal memuat jadwal:', err)
       setError(err.response?.data?.error || 'Gagal memuat jadwal')
@@ -156,7 +174,69 @@ export default function TimetableEditorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timetableId])
 
-  // Map entries ke grid: key = `${day}-${period}`
+  const handleActivate = async () => {
+    if (!confirm('Aktifkan jadwal ini? Jadwal yang sudah aktif tidak dapat diedit lagi.')) return
+
+    setActivating(true)
+    try {
+      const token = await getToken()
+      await axios.patch(
+        `${API_URL}/api/school-admin/timetables/${timetableId}/activate`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      await fetchData()
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Gagal mengaktifkan jadwal')
+    } finally {
+      setActivating(false)
+    }
+  }
+
+  const handleExportExcel = async () => {
+    if (!header) return
+    setExportingExcel(true)
+    try {
+      await exportTimetableToExcel({
+        entries: entries.map((e) => ({
+          day_of_week: e.day_of_week,
+          period_start: e.period_start,
+          period_end: e.period_end,
+          subject_name: e.subject_name_snapshot,
+          teacher_name: e.teacher_name,
+          room: e.room,
+        })),
+        defaultTimeSlots,
+        timeSlotsByDay,
+        days: DAYS,
+        periods: PERIODS,
+        className: header.class_sub_group_id || 'Kelas',
+        semester: header.semester || '-',
+        academicYear: header.academic_year_id || '-',
+      })
+    } catch (err) {
+      alert('Gagal export Excel: ' + err)
+    } finally {
+      setExportingExcel(false)
+    }
+  }
+
+  const handleExportPdf = async () => {
+    if (!header) return
+    setExportingPdf(true)
+    try {
+      await exportTimetableToPDF(
+        'timetable-grid',
+        `Jadwal-${header.semester || 'Pelajaran'}.pdf`
+      )
+    } catch (err) {
+      alert('Gagal export PDF: ' + err)
+    } finally {
+      setExportingPdf(false)
+    }
+  }
+
+  // Map entries ke grid
   const grid = useMemo(() => {
     const map: Record<string, Entry | null> = {}
     for (const day of DAYS) {
@@ -173,6 +253,8 @@ export default function TimetableEditorPage() {
   }, [entries])
 
   const openEditCell = (day: number, period: number) => {
+    if (header?.status !== 'draft') return
+
     const existing = grid[`${day}-${period}`]
     setEditing({ day, period, entry: existing })
     setSaveError(null)
@@ -211,7 +293,6 @@ export default function TimetableEditorPage() {
 
       const periodEnd = editing.period + form.period_span - 1
 
-      // Kalau ada entry lama, hapus dulu
       if (editing.entry) {
         await axios.delete(
           `${API_URL}/api/school-admin/timetables/${timetableId}/entries/${editing.entry.id}`,
@@ -219,7 +300,6 @@ export default function TimetableEditorPage() {
         )
       }
 
-      // Cek bentrok dengan entry lain di slot yang akan ditimpa
       for (let p = editing.period; p <= periodEnd; p++) {
         const occupied = grid[`${editing.day}-${p}`]
         if (occupied && occupied.id !== editing.entry?.id) {
@@ -297,12 +377,28 @@ export default function TimetableEditorPage() {
     }
   }
 
-  const getPeriodLabel = (period: number) => {
-    const slot = timeSlots.find((s) => s.period_number === period)
+  const getPeriodLabel = (dayId: number, period: number) => {
+    const daySlots = timeSlotsByDay[String(dayId)] || []
+    const slot = daySlots.find((s) => s.period_number === period)
+
     if (slot) {
-      return `${slot.start_time} - ${slot.end_time}`
+      return {
+        time: `${slot.start_time} - ${slot.end_time}`,
+        isBreak: slot.is_break,
+        isOverride: slot.is_override,
+      }
     }
-    return `Jam ${period}` 
+
+    const defSlot = defaultTimeSlots.find((s) => s.period_number === period)
+    if (defSlot) {
+      return {
+        time: `${defSlot.start_time} - ${defSlot.end_time}`,
+        isBreak: defSlot.is_break,
+        isOverride: false,
+      }
+    }
+
+    return { time: `Jam ${period}`, isBreak: false, isOverride: false }
   }
 
   if (loading) {
@@ -328,6 +424,8 @@ export default function TimetableEditorPage() {
     )
   }
 
+  const isDraft = header.status === 'draft'
+
   return (
     <div className="flex flex-col gap-5">
       {/* Header */}
@@ -342,8 +440,21 @@ export default function TimetableEditorPage() {
           </button>
           <div>
             <h1 className="text-lg font-bold text-tp-text sm:text-xl">Editor Jadwal</h1>
-            <p className="text-xs text-tp-muted">
-              Semester {header.semester} · Status: {header.status}
+            <p className="text-xs text-tp-muted flex items-center gap-2">
+              Semester {header.semester}
+              <span className="mx-1">·</span>
+              Status:
+              <span
+                className={`px-2 py-0.5 rounded-full font-semibold ${
+                  isDraft
+                    ? 'bg-amber-100 text-amber-700'
+                    : header.status === 'active'
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : 'bg-slate-100 text-slate-600'
+                }`}
+              >
+                {header.status.toUpperCase()}
+              </span>
             </p>
           </div>
         </div>
@@ -351,13 +462,55 @@ export default function TimetableEditorPage() {
         <div className="flex gap-2">
           <button
             type="button"
+            onClick={handleExportExcel}
+            disabled={exportingExcel || loading}
+            className="inline-flex items-center gap-2 rounded-xl border border-tp-border bg-white px-3 py-2 text-xs font-semibold text-tp-text hover:bg-tp-bg disabled:opacity-60"
+          >
+            {exportingExcel ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <FileSpreadsheet size={14} className="text-emerald-600" />
+            )}
+            Excel
+          </button>
+          <button
+            type="button"
+            onClick={handleExportPdf}
+            disabled={exportingPdf || loading}
+            className="inline-flex items-center gap-2 rounded-xl border border-tp-border bg-white px-3 py-2 text-xs font-semibold text-tp-text hover:bg-tp-bg disabled:opacity-60"
+          >
+            {exportingPdf ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <FileText size={14} className="text-rose-600" />
+            )}
+            PDF
+          </button>
+          <button
+            type="button"
             onClick={handleValidate}
             disabled={validating}
             className="inline-flex items-center gap-2 rounded-xl border border-tp-border bg-white px-3 py-2 text-xs font-semibold text-tp-text hover:bg-tp-bg disabled:opacity-60"
           >
-            {validating ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+            {validating ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <CheckCircle2 size={14} />
+            )}
             Cek Bentrok
           </button>
+
+          {isDraft && (
+            <button
+              type="button"
+              onClick={handleActivate}
+              disabled={activating}
+              className="inline-flex items-center gap-2 rounded-xl bg-tp-green px-4 py-2 text-xs font-semibold text-white hover:bg-tp-green-hover disabled:opacity-60"
+            >
+              {activating ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+              {activating ? 'Memproses...' : 'Aktifkan Jadwal'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -393,13 +546,24 @@ export default function TimetableEditorPage() {
         </div>
       )}
 
-      {/* Grid */}
-      <div className="overflow-hidden rounded-2xl border border-tp-border bg-white">
+      {/* Grid + Kop cetak (untuk PDF) */}
+      <div
+        id="timetable-grid" // ✅ FIX: diberi id untuk html2canvas
+        className="overflow-hidden rounded-2xl border border-tp-border bg-white p-4"
+      >
+        {/* Kop Cetak — hanya muncul di export PDF (dan Excel bila ditambahkan) */}
+        <div className="mb-4 border-b border-tp-border pb-3 text-center">
+          <h2 className="text-base font-bold text-tp-text">JADWAL PELAJARAN</h2>
+          <p className="text-xs text-tp-muted">
+            Semester {header.semester} · Tahun Pelajaran {header.academic_year_id || '-'}
+          </p>
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px] border-collapse text-xs">
             <thead>
               <tr className="bg-tp-bg/60">
-                <th className="w-24 border-b border-r border-tp-border px-2 py-2 text-left font-semibold text-tp-muted">
+                <th className="w-32 border-b border-r border-tp-border px-2 py-2 text-left font-semibold text-tp-muted">
                   Jam
                 </th>
                 {DAYS.map((d) => (
@@ -416,33 +580,64 @@ export default function TimetableEditorPage() {
               {PERIODS.map((p) => (
                 <tr key={p}>
                   <td className="border-b border-r border-tp-border bg-tp-bg/30 px-2 py-1.5 text-center text-[11px] font-semibold text-tp-muted">
-                    {getPeriodLabel(p)}
+                    JP {p}
                   </td>
+
                   {DAYS.map((d) => {
                     const entry = grid[`${d.id}-${p}`]
                     const isStart = entry && entry.period_start === p
                     const isSpan = entry && entry.period_end > entry.period_start
 
-                    // Kalau ini bukan start dari span, tapi bagian dari span lain, kosongkan (rowspan handle)
+                    const { time, isBreak, isOverride } = getPeriodLabel(d.id, p)
+
                     if (entry && !isStart) return null
 
                     return (
                       <td
                         key={`${d.id}-${p}`}
                         rowSpan={isSpan ? entry.period_end - entry.period_start + 1 : 1}
-                        className="border-b border-r border-tp-border p-1 align-top last:border-r-0"
+                        className={`border-b border-r border-tp-border p-1 align-top last:border-r-0 ${
+                          isBreak ? 'bg-amber-50/50' : ''
+                        }`}
                       >
+                        {!entry && (
+                          <div
+                            className={`mb-1 text-[10px] font-medium text-center ${
+                              isBreak ? 'text-amber-600 font-bold' : 'text-tp-muted'
+                            } ${isOverride ? 'text-amber-700' : ''}`}
+                          >
+                            {isBreak ? <Coffee size={10} className="inline mr-1" /> : null}
+                            {time}
+                            {isOverride && (
+                              <span className="ml-1 text-[8px] bg-amber-200 text-amber-800 px-1 rounded">
+                                Khusus
+                              </span>
+                            )}
+                          </div>
+                        )}
+
                         <button
                           type="button"
                           onClick={() => openEditCell(d.id, p)}
-                          className={`flex h-full min-h-[52px] w-full flex-col items-start gap-0.5 rounded-lg p-1.5 text-left transition ${
-                            entry
-                              ? 'bg-tp-green/10 hover:bg-tp-green/15'
-                              : 'hover:bg-tp-green/5'
+                          disabled={!isDraft}
+                          className={`flex h-full min-h-[40px] w-full flex-col items-start gap-0.5 rounded-lg p-1.5 text-left transition ${
+                            entry ? 'bg-tp-green/10' : isBreak ? 'bg-transparent' : ''
+                          } ${
+                            isDraft
+                              ? 'hover:bg-tp-green/5 cursor-pointer'
+                              : 'cursor-default opacity-80'
                           }`}
                         >
                           {entry ? (
                             <>
+                              <div className="mb-1 flex w-full items-center justify-between text-[10px] font-medium text-tp-green">
+                                <span>{time}</span>
+                                {isOverride && (
+                                  <span className="text-[8px] bg-amber-200 text-amber-800 px-1 rounded">
+                                    Khusus
+                                  </span>
+                                )}
+                              </div>
                               <span className="text-[11px] font-semibold text-tp-green">
                                 {entry.subject_name_snapshot || 'Mapel'}
                               </span>
@@ -459,7 +654,11 @@ export default function TimetableEditorPage() {
                               )}
                             </>
                           ) : (
-                            <span className="text-[10px] text-tp-faint">+ Tambah</span>
+                            isDraft && (
+                              <span className="text-[10px] text-tp-faint mt-auto mx-auto">
+                                + Tambah
+                              </span>
+                            )
                           )}
                         </button>
                       </td>
@@ -470,6 +669,20 @@ export default function TimetableEditorPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Tanda tangan (opsional, muncul di PDF) */}
+        {/* <div className="mt-6 flex justify-between text-[10px] text-tp-muted">
+          <div>
+            <p>Mengetahui,</p>
+            <p>Kepala Sekolah</p>
+            <div className="mt-10 border-t border-tp-border pt-1 w-40">(...................................)</div>
+          </div>
+          <div>
+            <p>Dibuat oleh,</p>
+            <p>Waka Kurikulum</p>
+            <div className="mt-10 border-t border-tp-border pt-1 w-40">(...................................)</div>
+          </div>
+        </div> */}
       </div>
 
       {/* ===================== MODAL EDIT CELL ===================== */}
@@ -492,7 +705,8 @@ export default function TimetableEditorPage() {
               {editing.entry ? 'Edit Jadwal' : 'Tambah Jadwal'}
             </h3>
             <p className="mb-4 text-xs text-tp-muted">
-              {DAYS.find((d) => d.id === editing.day)?.label}, Jam {editing.period}
+              {DAYS.find((d) => d.id === editing.day)?.label},{' '}
+              {getPeriodLabel(editing.day, editing.period).time}
             </p>
 
             {saveError && (
@@ -505,7 +719,8 @@ export default function TimetableEditorPage() {
             <div className="space-y-3">
               <div>
                 <label className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-tp-text">
-                  <BookOpen size={12} /> Mata Pelajaran <span className="text-rose-500">*</span>
+                  <BookOpen size={12} /> Mata Pelajaran{' '}
+                  <span className="text-rose-500">*</span>
                 </label>
                 <select
                   value={form.subject_id}

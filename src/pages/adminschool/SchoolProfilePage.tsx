@@ -215,9 +215,6 @@ export default function SchoolProfilePage() {
             </div>
           </div>
         ) : (
-          // ==============================
-          // TAMPILAN MODE EDIT (FORM)
-          // ==============================
           <form onSubmit={handleUpdateProfile} className="space-y-5 p-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>

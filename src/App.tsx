@@ -71,14 +71,16 @@ import ExamMonitorPage from './pages/adminschool/exams/ExamMonitorPage'
 import ExamScheduleDetailPage from './pages/adminschool/exams/ExamScheduleDetailPage'
 import ExamGradesPage from './pages/adminschool/exams/ExamGradesPage'
 import ExamSubmissionDetailPage from './pages/adminschool/exams/ExamSubmissionDetailPage'
-import PersonalExamListPage from './features/personal-exam/pages/PersonalExamListPage'
 
-import PersonalExamCreatePage from './features/personal-exam/pages/PersonalExamCreatePage'
-import PersonalExamDetailPage from './features/personal-exam/pages/PersonalExamDetailPage'
-import PersonalExamParticipantsPage from './features/personal-exam/pages/PersonalExamParticipantsPage'
-import PersonalStudentManagementPage from './features/personal-exam/pages/PersonalStudentManagementPage'
+//import PersonalExamListPage from './features/personal-exam/pages/PersonalExamListPage'
+//import PersonalExamCreatePage from './features/personal-exam/pages/PersonalExamCreatePage'
+//import PersonalExamDetailPage from './features/personal-exam/pages/PersonalExamDetailPage'
+//import PersonalExamParticipantsPage from './features/personal-exam/pages/PersonalExamParticipantsPage'
+//import PersonalStudentManagementPage from './features/personal-exam/pages/PersonalStudentManagementPage'
+//import PersonalExamQrSheetPage from './features/personal-exam/pages/PersonalExamQrSheetPage'
 
-import PersonalExamQrSheetPage from './features/personal-exam/pages/PersonalExamQrSheetPage'
+import { AuthProvider } from './contexts/AuthContext'
+import { PermissionGuard } from './components/PermissionGuard'
 
 // import TakePersonalExamPage from './pages/studentexam/TakePersonalExamPage'
 
@@ -582,11 +584,6 @@ export default function App() {
         path="/"
         element={
           !session ? (
-            // [OLD] Sebelumnya render LoginPage langsung
-            // <LoginPage />
-
-            // [NEW] Redirect ke /login/guru (default portal guru)
-            // <Navigate to="/login/guru" replace />
             <Navigate to="/login/admin-sekolah" replace />
           ) : authError ? (
             <div className="grid min-h-screen place-items-center text-center p-6">
@@ -612,14 +609,17 @@ export default function App() {
               <Navigate to="/school-admin/dashboard" replace />
             )
           ) : (
-            <MainLayout
-              session={session}
-              teacherType={teacherType}
-              schoolMemberships={schoolMemberships}
-            />
+            <AuthProvider>
+              <MainLayout
+                session={session}
+                teacherType={teacherType}
+                schoolMemberships={schoolMemberships}
+              />
+            </AuthProvider>
           )
         }
       >
+        {/* Dashboard dan Profile selalu bisa diakses */}
         <Route index element={<DashboardOverview tokenBalance={tokenBalance} />} />
         <Route path="profile" element={<ProfilePage session={session} />} />
 
@@ -629,26 +629,111 @@ export default function App() {
         />
 
         <Route path="ebooks" element={<EbooksPage />} />
-        {/* <Route path="billing" element={<BillingPage />} /> */}
         <Route path="exam-session" element={<ExamSessionPage session={session} />} />
 
         {/* ==========================================
-            Personal Exam Routes (untuk guru B2C)
+            Personal Exam Routes — GUARDED by permission
         ========================================== */}
-        <Route path="personal-exams" element={<PersonalExamListPage />} />
-        <Route path="personal-exams/create" element={<PersonalExamCreatePage />} />
-        <Route path="personal-exams/:examId" element={<PersonalExamDetailPage />} />
-        <Route path="personal-exams/:examId/edit" element={<PersonalExamCreatePage />} />
-        <Route
+        {/* <Route
+          path="personal-exams"
+          element={
+            <PermissionGuard permission="personal_exam.read">
+              <PersonalExamListPage />
+            </PermissionGuard>
+          }
+        /> */}
+
+        {/* <Route
+          path="personal-exams/create"
+          element={
+            <PermissionGuard permission="personal_exam.create">
+              <PersonalExamCreatePage />
+            </PermissionGuard>
+          }
+        /> */}
+
+        {/* <Route
+          path="personal-exams/:examId"
+          element={
+            <PermissionGuard permission="personal_exam.read">
+              <PersonalExamDetailPage />
+            </PermissionGuard>
+          }
+        /> */}
+
+        {/* <Route
+          path="personal-exams/:examId/edit"
+          element={
+            <PermissionGuard permission="personal_exam.edit">
+              <PersonalExamCreatePage />
+            </PermissionGuard>
+          }
+        /> */}
+
+        {/* <Route
           path="personal-exams/:examId/participants"
-          element={<PersonalExamParticipantsPage />}
-        />
-        <Route
+          element={
+            <PermissionGuard permission="personal_exam.read">
+              <PersonalExamParticipantsPage />
+            </PermissionGuard>
+          }
+        /> */}
+
+        {/* <Route
           path="personal-exams/:examId/qr-sheet"
-          element={<PersonalExamQrSheetPage />}
+          element={
+            <PermissionGuard permission="personal_exam.read">
+              <PersonalExamQrSheetPage />
+            </PermissionGuard>
+          }
+        /> */}
+
+        {/* <Route
+          path="personal-students"
+          element={
+            <PermissionGuard permission="personal_student.read">
+              <PersonalStudentManagementPage />
+            </PermissionGuard>
+          }
+        /> */}
+
+        {/* ==========================================
+            Route khusus WALI KELAS — placeholder dulu
+        ========================================== */}
+        <Route
+          path="my-class"
+          element={
+            <PermissionGuard position="homeroom_teacher">
+              <div className="rounded-2xl border border-tp-border bg-white p-8 text-center">
+                <h1 className="mb-2 text-2xl font-bold text-tp-text">
+                  Halaman Wali Kelas
+                </h1>
+                <p className="text-sm text-tp-muted">
+                  Halaman ini sedang dalam pengembangan.
+                </p>
+              </div>
+            </PermissionGuard>
+          }
         />
 
-        <Route path="personal-students" element={<PersonalStudentManagementPage />} />
+        {/* ==========================================
+            Route khusus WAKA KURIKULUM — placeholder dulu
+        ========================================== */}
+        <Route
+          path="curriculum"
+          element={
+            <PermissionGuard position="vice_curriculum">
+              <div className="rounded-2xl border border-tp-border bg-white p-8 text-center">
+                <h1 className="mb-2 text-2xl font-bold text-tp-text">
+                  Halaman Kurikulum
+                </h1>
+                <p className="text-sm text-tp-muted">
+                  Halaman ini sedang dalam pengembangan.
+                </p>
+              </div>
+            </PermissionGuard>
+          }
+        />
       </Route>
 
       {/* --- 404 --- */}

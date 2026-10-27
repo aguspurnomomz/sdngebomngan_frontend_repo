@@ -6,6 +6,7 @@ import SuperAdminEbooks from './SuperAdminEbooks'
 import SuperAdminUsers from './SuperAdminUsers'
 import SuperAdminSecurity from './SuperAdminSecurity'
 import SuperAdminSchools from './SuperAdminSchools'
+import SuperAdminRoles from './SuperAdminRoles'
 
 import { Button } from '@/components/ui/button'
 import { 
@@ -16,6 +17,7 @@ import {
   Menu, 
   LogOut, 
   RefreshCw, 
+  Shield,
   Building2
 } from 'lucide-react'
 
@@ -55,7 +57,7 @@ interface SuperAdminDashboardProps {
   onLogout: () => void
 }
 
-type AdminView = 'dashboard' | 'users' | 'schools' | 'ebooks' | 'security'
+type AdminView = 'dashboard' | 'users' | 'schools' | 'roles' | 'ebooks' | 'security'
 
 export default function SuperAdminDashboard({ adminName, onLogout }: SuperAdminDashboardProps) {
   const [users, setUsers] = useState<UserItem[]>([])
@@ -111,6 +113,7 @@ export default function SuperAdminDashboard({ adminName, onLogout }: SuperAdminD
   const menuItems = [
     { id: 'dashboard' as const, label: 'Dashboard', icon: <Home size={18} /> },
     { id: 'users' as const, label: 'User Guru', icon: <Users size={18} />, badge: String(stats.total) },
+    { id: 'roles' as const, label: 'Peran di Sekolah', icon: <Shield size={18} /> },
     { id: 'ebooks' as const, label: 'Kelola E-Book', icon: <BookOpen size={18} /> },
     { id: 'schools' as const, label: 'Kelola Sekolah', icon: <Building2 size={18} /> },
     { id: 'security' as const, label: 'Keamanan & Log', icon: <ShieldCheck size={18} /> },
@@ -202,6 +205,10 @@ export default function SuperAdminDashboard({ adminName, onLogout }: SuperAdminD
                 ? 'Dashboard'
                 : activeView === 'users'
                 ? 'User Guru Terdaftar'
+                : activeView === 'schools'
+                ? 'Kelola Sekolah'
+                : activeView === 'roles'               
+                ? 'Peran di Sekolah'
                 : activeView === 'ebooks'
                 ? 'Kelola E-Book Referensi'
                 : 'Keamanan & Log'}
@@ -277,6 +284,8 @@ export default function SuperAdminDashboard({ adminName, onLogout }: SuperAdminD
             <SuperAdminUsers users={users} loading={loading} onRefresh={fetchRegisteredUsers} />
           ) : activeView === 'schools' ? (
             <SuperAdminSchools />
+          ) : activeView === 'roles' ? (           
+            <SuperAdminRoles />
           ) : activeView === 'ebooks' ? (
             <SuperAdminEbooks />
           ) : (

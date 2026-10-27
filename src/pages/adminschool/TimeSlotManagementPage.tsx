@@ -143,9 +143,6 @@ export default function TimeSlotManagementPage() {
     fetchOverrides()
   }, [])
 
-  // ==========================================
-  // DEFAULT SLOTS — CREATE / EDIT / DELETE
-  // ==========================================
   const openCreateManual = () => {
     const nextNum = timeSlots.length > 0 ? Math.max(...timeSlots.map((s) => s.period_number)) + 1 : 1
     setEditingSlot(null)
@@ -269,14 +266,11 @@ export default function TimeSlotManagementPage() {
     }
   }
 
-  // ==========================================
-  // OVERRIDES — CREATE / EDIT / DELETE
-  // ==========================================
   const openCreateOverride = () => {
     const firstSlot = timeSlots[0]
     setEditingOverride(null)
     setOverrideForm({
-      day_of_week: 5, // default Jumat
+      day_of_week: 5, 
       period_number: firstSlot?.period_number ?? 1,
       start_time: firstSlot?.start_time ?? '',
       end_time: firstSlot?.end_time ?? '',
@@ -299,7 +293,7 @@ export default function TimeSlotManagementPage() {
     setShowOverrideModal(true)
   }
 
-  // Saat user ganti JP di modal override → auto-fill jam dari default
+
   const handleOverridePeriodChange = (periodNumber: number) => {
     const def = timeSlots.find((s) => s.period_number === periodNumber)
     setOverrideForm((prev) => ({
@@ -321,7 +315,6 @@ export default function TimeSlotManagementPage() {
       return
     }
 
-    // Cek duplikat lokal (kecuali dirinya sendiri saat edit)
     const duplicate = overrides.find(
       (o) =>
         o.day_of_week === overrideForm.day_of_week &&

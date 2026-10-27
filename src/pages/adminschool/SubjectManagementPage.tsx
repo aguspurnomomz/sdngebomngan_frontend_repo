@@ -1,8 +1,16 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Button } from '../../components/ui/button'
 import {
-  Plus, Trash2, CheckCircle, X, Loader2,
-  BookOpen, Pencil, Search, Power, PowerOff,
+  Plus, 
+  Trash2, 
+  CheckCircle, 
+  X, 
+  Loader2,
+  BookOpen, 
+  Pencil, 
+  Search, 
+  Power, 
+  PowerOff,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import axios from 'axios'

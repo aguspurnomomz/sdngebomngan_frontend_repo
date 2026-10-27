@@ -195,8 +195,6 @@ export default function SchoolAdminDashboard({ session }: { session: any }) {
     if (toOpen.length === 0) return
 
     setExpandedMenus((prev) => {
-      // kalau semua sudah terbuka, kembalikan reference yang sama
-      // supaya tidak trigger re-render
       const alreadyOpen = toOpen.every((k) => prev.includes(k))
       if (alreadyOpen) return prev
       const merged = new Set([...prev, ...toOpen])

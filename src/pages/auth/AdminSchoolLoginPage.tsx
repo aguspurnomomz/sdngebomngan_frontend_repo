@@ -17,7 +17,7 @@ export default function AdminSchoolLoginPage() {
     e.preventDefault()
     if (!agreed) return 
     setLoading(true)
-    setLoginError(null) // reset error
+    setLoginError(null) 
 
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -46,7 +46,7 @@ export default function AdminSchoolLoginPage() {
           <div className="mb-5 inline-flex items-center gap-2 self-start rounded-full bg-tp-green/10 px-3 py-1">
             {/* <span className="h-1.5 w-1.5 rounded-full bg-tp-green" /> */}
             <span className="text-[10px] sm:text-xs font-semibold text-tp-green uppercase tracking-wide">
-              Portal Admin Sekolah
+              Portal Pendidikan Sekolah
             </span>
           </div>
 
@@ -83,7 +83,7 @@ export default function AdminSchoolLoginPage() {
             password={password}
             onEmailChange={(v) => {
               setEmail(v)
-              if (loginError) setLoginError(null) // hapus error saat user mulai mengetik
+              if (loginError) setLoginError(null) 
             }}
             onPasswordChange={(v) => {
               setPassword(v)

@@ -17,7 +17,7 @@ export default function GuruLoginPage() {
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!agreed) return // safety guard, walau tombol sudah disabled
+    if (!agreed) return 
     setLoading(true)
 
     try {

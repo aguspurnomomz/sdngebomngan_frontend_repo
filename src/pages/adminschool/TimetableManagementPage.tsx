@@ -64,7 +64,6 @@ export default function TimetableManagementPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
-  const [filterSemester, setFilterSemester] = useState('')
   const [filterAcademicYear, setFilterAcademicYear] = useState('')
 
   // Modal create
@@ -74,7 +73,6 @@ export default function TimetableManagementPage() {
   const [formData, setFormData] = useState({
     class_sub_group_id: '',
     academic_year_id: '',
-    semester: 'Ganjil',
     notes: '',
   })
 
@@ -133,14 +131,14 @@ export default function TimetableManagementPage() {
         return false
       }
     }
-    if (filterSemester && t.semester !== filterSemester) return false
+    // if (filterSemester && t.semester !== filterSemester) return false
     if (filterAcademicYear && t.academic_year_id !== filterAcademicYear) return false
     return true
   })
 
   const handleCreate = async () => {
-    if (!formData.class_sub_group_id || !formData.academic_year_id || !formData.semester) {
-      setCreateError('Sub kelas, tahun akademik, dan semester wajib diisi')
+    if (!formData.class_sub_group_id || !formData.academic_year_id) {
+      setCreateError('Sub kelas dan tahun akademik wajib diisi')
       return
     }
     setCreating(true)
@@ -148,6 +146,9 @@ export default function TimetableManagementPage() {
     try {
       const token = await getToken()
       const subClass = subClasses.find((s) => s.id === formData.class_sub_group_id)
+      
+      // Ambil data tahun akademik untuk mendapatkan semesternya
+      const selectedAcademicYear = academicYears.find((ay) => ay.id === formData.academic_year_id)
 
       const res = await axios.post(
         `${API_URL}/api/school-admin/timetables`,
@@ -155,7 +156,8 @@ export default function TimetableManagementPage() {
           class_sub_group_id: formData.class_sub_group_id,
           class_group_id: subClass?.class_group_id || '',
           academic_year_id: formData.academic_year_id,
-          semester: formData.semester,
+          // Gunakan semester dari tahun akademik yang dipilih
+          semester: selectedAcademicYear?.semester || 'Ganjil', 
           notes: formData.notes,
         },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -165,7 +167,6 @@ export default function TimetableManagementPage() {
       setFormData({
         class_sub_group_id: '',
         academic_year_id: '',
-        semester: 'Ganjil',
         notes: '',
       })
 
@@ -260,7 +261,7 @@ export default function TimetableManagementPage() {
 
         <div className="flex items-center gap-2">
           <Filter size={16} className="text-tp-muted" />
-          <select
+          {/* <select
             value={filterSemester}
             onChange={(e) => setFilterSemester(e.target.value)}
             className="rounded-xl border border-tp-border bg-white px-3 py-2 text-sm outline-none focus:border-tp-green"
@@ -268,7 +269,7 @@ export default function TimetableManagementPage() {
             <option value="">Semua Semester</option>
             <option value="Ganjil">Ganjil</option>
             <option value="Genap">Genap</option>
-          </select>
+          </select> */}
 
           <select
             value={filterAcademicYear}
@@ -449,7 +450,7 @@ export default function TimetableManagementPage() {
                 </select>
               </div>
 
-              <div>
+              {/* <div>
                 <label className="mb-1 block text-xs font-semibold text-tp-text">
                   Semester <span className="text-rose-500">*</span>
                 </label>
@@ -463,7 +464,7 @@ export default function TimetableManagementPage() {
                   <option value="Ganjil">Ganjil</option>
                   <option value="Genap">Genap</option>
                 </select>
-              </div>
+              </div> */}
 
               <div>
                 <label className="mb-1 block text-xs font-semibold text-tp-text">
