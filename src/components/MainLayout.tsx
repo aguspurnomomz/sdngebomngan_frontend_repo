@@ -6,17 +6,13 @@ import {
   LayoutDashboard,
   FileText,
   BookOpen,
-  //UserCog,
   LogOut,
   Menu,
   ChevronDown,
   ChevronRight,
-  //Building2,
-  //CalendarDays,
-  //Clock,
   Users,
   GraduationCap,
-  CalendarClock
+  CalendarClock,
 } from 'lucide-react'
 import CrispChat from './CrispChat'
 import { useAuth } from '../contexts/AuthContext'
@@ -34,33 +30,38 @@ type MainLayoutProps = {
   schoolMemberships?: Membership[]
 }
 
-export default function MainLayout({ 
-  session, 
-  //teacherType = 'b2c', 
-  schoolMemberships = [] 
-}: MainLayoutProps) {                                              
+// [FIX] Tipe menu eksplisit supaya TS tidak komplain saat spread conditional
+type MenuChild = {
+  path: string
+  label: string
+  icon: React.ReactNode
+}
+
+type MenuGroup = {
+  key: string
+  label: string
+  icon: React.ReactNode
+  children: MenuChild[]
+}
+
+export default function MainLayout({
+  session,
+  schoolMemberships = [],
+}: MainLayoutProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [showLogoutModal, setShowLogoutModal] = useState(false) 
-  const [isLoggingOut, setIsLoggingOut] = useState(false) 
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   const email = session?.user?.email ?? ''
   const displayName = email.split('@')[0] || 'Guru'
   const initial = (email.charAt(0) || 'G').toUpperCase()
 
-  // === MENU BARU: Mengikuti gaya Admin Sekolah ===
-  // const menuItems = [
-  //   { path: '/', label: 'Beranda', icon: <LayoutDashboard size={18} /> },
-  //   { path: '/ebooks', label: 'Referensi E-Book', icon: <BookOpen size={18} /> },
-  //   // Menu Ujian Personal, Siswa Personal, dan Beli Token DIHAPUS sesuai permintaan
-  // ]
-
   const { hasPermission } = useAuth()
 
-  // Untuk sementara kita jadikan grup statis seperti admin
-  // Nanti bisa diambil dinamis dari AuthContext (RBAC)
-  const groupedMenu = [
+  // [FIX] Menu grup dengan tipe eksplisit + menu "Kelola Ujian"
+  const groupedMenu: MenuGroup[] = [
     {
       key: 'guru',
       label: 'Menu Utama',
@@ -68,27 +69,39 @@ export default function MainLayout({
       children: [
         { path: '/', label: 'Beranda', icon: <LayoutDashboard size={14} /> },
         { path: '/ebooks', label: 'Referensi E-Book', icon: <BookOpen size={14} /> },
-      ]
+      ],
     },
-    // Jika punya permission siswa & ujian, tampilkan menu itu
-    ...(hasPermission('student.read') ? [{
-      key: 'kelas',
-      label: 'Data Kelas & Siswa',
-      icon: <Users size={18} />,
-      children: [
-        { path: '/students', label: 'Kelola Siswa', icon: <GraduationCap size={14} /> },
-        { path: '/classes', label: 'Kelola Kelas', icon: <Users size={14} /> },
-      ]
-    }] : []),
-    ...(hasPermission('exam.read') ? [{
-      key: 'ujian',
-      label: 'Ujian Sekolah',
-      icon: <FileText size={18} />,
-      children: [
-        { path: '/exams', label: 'Soal Ujian', icon: <FileText size={14} /> },
-        { path: '/exam-schedules', label: 'Jadwal Ujian', icon: <CalendarClock size={14} /> },
-      ]
-    }] : [])
+    ...(hasPermission('student.read')
+      ? [
+          {
+            key: 'kelas',
+            label: 'Data Kelas & Siswa',
+            icon: <Users size={18} />,
+            children: [
+              { path: '/students', label: 'Kelola Siswa', icon: <GraduationCap size={14} /> },
+              { path: '/classes', label: 'Kelola Kelas', icon: <Users size={14} /> },
+            ],
+          },
+        ]
+      : []),
+    // [FIX] Menu Kelola Ujian — sama seperti di Admin Sekolah
+    ...(hasPermission('exam.read')
+      ? [
+          {
+            key: 'ujian',
+            label: 'Kelola Ujian',
+            icon: <FileText size={18} />,
+            children: [
+              { path: '/exams', label: 'Soal Ujian', icon: <FileText size={14} /> },
+              {
+                path: '/exam-schedules',
+                label: 'Jadwal Ujian',
+                icon: <CalendarClock size={14} />,
+              },
+            ],
+          },
+        ]
+      : []),
   ]
 
   const [expandedMenus, setExpandedMenus] = useState<string[]>(['guru'])
@@ -99,9 +112,32 @@ export default function MainLayout({
     )
   }
 
+  // [FIX] Auto-expand grup menu sesuai path aktif
+  useEffect(() => {
+    const p = location.pathname
+    const toOpen: string[] = []
+
+    if (p.startsWith('/exams') || p.startsWith('/exam-schedules')) {
+      toOpen.push('ujian')
+    }
+    if (p.startsWith('/students') || p.startsWith('/classes')) {
+      toOpen.push('kelas')
+    }
+
+    if (toOpen.length === 0) return
+
+    setExpandedMenus((prev) => {
+      const alreadyOpen = toOpen.every((k) => prev.includes(k))
+      if (alreadyOpen) return prev
+      return Array.from(new Set([...prev, ...toOpen]))
+    })
+  }, [location.pathname])
+
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session: currentSession } } = await supabase.auth.getSession()
+      const {
+        data: { session: currentSession },
+      } = await supabase.auth.getSession()
       if (!currentSession) {
         navigate('/', { replace: true })
       }
@@ -127,7 +163,9 @@ export default function MainLayout({
       <CrispChat />
       <button
         type="button"
-        className={`fixed inset-0 z-40 border-0 bg-slate-900/40 p-0 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}
+        className={`fixed inset-0 z-40 border-0 bg-slate-900/40 p-0 lg:hidden ${
+          sidebarOpen ? 'block' : 'hidden'
+        }`}
         aria-label="Tutup menu"
         onClick={closeSidebar}
       />
@@ -141,7 +179,7 @@ export default function MainLayout({
         <div className="mb-9 flex items-center gap-2.5 px-2">
           <img src={skoolagoIcon} alt="SkoolaGo" className="h-8 w-auto object-contain" />
         </div>
-        
+
         <div className="mb-9 flex items-center gap-2.5 px-2">
           <span className="font-bold text-tp-text text-sm">Portal Guru</span>
         </div>
@@ -149,11 +187,12 @@ export default function MainLayout({
         <div className="mb-2.5 px-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-tp-faint">
           Menu
         </div>
-        
+
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">
           {groupedMenu.map((item) => {
             const isExpanded = expandedMenus.includes(item.key)
-            const hasActiveChild = item.children?.some((c) => location.pathname === c.path) ?? false
+            const hasActiveChild =
+              item.children?.some((c) => location.pathname === c.path) ?? false
 
             return (
               <div key={item.key}>
@@ -209,11 +248,15 @@ export default function MainLayout({
             </div>
             <div className="flex max-h-[180px] flex-col gap-1 overflow-y-auto">
               {schoolMemberships.map((m) => (
-                <div 
+                <div
                   key={m.school_id}
                   className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs"
                 >
-                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${m.is_active ? 'bg-tp-green' : 'bg-slate-300'}`} />
+                  <span
+                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                      m.is_active ? 'bg-tp-green' : 'bg-slate-300'
+                    }`}
+                  />
                   <span className="flex-1 truncate text-tp-text">{m.school_name}</span>
                 </div>
               ))}
@@ -236,9 +279,14 @@ export default function MainLayout({
       {/* Modal Logout */}
       {showLogoutModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !isLoggingOut && setShowLogoutModal(false)} />
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => !isLoggingOut && setShowLogoutModal(false)}
+          />
           <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-            <h3 className="mb-2 text-center text-xl font-bold text-gray-900">Perhatian!</h3>
+            <h3 className="mb-2 text-center text-xl font-bold text-gray-900">
+              Perhatian!
+            </h3>
             <p className="mb-6 text-center text-sm text-gray-600">
               Halo {displayName}, apakah Anda yakin ingin keluar?
             </p>
@@ -289,9 +337,11 @@ export default function MainLayout({
             </div>
           </div>
         </header>
+
         <main className="w-full max-w-[1200px] px-4 pb-6 pt-6 sm:px-7 sm:pb-8">
           <Outlet />
         </main>
+
         <footer className="w-full max-w-[1200px] px-4 pb-6 sm:px-7 sm:pb-8">
           <div className="border-t border-tp-border pt-6 text-center text-xs text-tp-muted">
             Copyright © 2025 - 2026 SkoolaGo. All Rights Reserved.

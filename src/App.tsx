@@ -3,11 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './lib/supabaseClient'
 import axios from 'axios'
 
-// [OLD] Di-comment karena sudah digantikan oleh GuruLoginPage & AdminSchoolLoginPage
-// import LoginPage  from './pages/LoginPage'
-
-// [NEW] Test yang baru — 2 halaman login terpisah
-// import GuruLoginPage from './pages/auth/GuruLoginPage'
+import GuruLoginPage from './pages/auth/GuruLoginPage'
 import AdminSchoolLoginPage from './pages/auth/AdminSchoolLoginPage'
 
 import RegisterPage from './pages/RegisterPage'
@@ -22,7 +18,6 @@ import DashboardOverview from './pages/userteacher/DashboardOverview'
 import QuestionBankPage from './pages/userteacher/QuestionBankPage'
 import ProfilePage from './pages/userteacher/ProfilePage'
 import EbooksPage from './pages/userteacher/EbooksPage'
-//import BillingPage from './pages/userteacher/BillingPage'
 import ExamSessionPage from './pages/userteacher/ExamSessionPage'
 
 import TakeSchoolExamPage from './pages/studentexam/TakeSchoolExamPage'
@@ -46,19 +41,7 @@ import TimetableManagementPage from './pages/adminschool/TimetableManagementPage
 import TimetableEditorPage from './pages/adminschool/TimetableEditorPage'
 import TimeSlotManagementPage from './pages/adminschool/TimeSlotManagementPage'
 
-// import AttendanceDashboard from './pages/adminschool/attendance/AttendanceDashboard'
-// import ShiftManagementPage from './pages/adminschool/attendance/ShiftManagementPage'
-// import CalendarManagementPage from './pages/adminschool/attendance/CalendarManagementPage'
-// import ShiftAssignmentPage from './pages/adminschool/attendance/ShiftAssignmentPage'
-// import QrCodeManagementPage from './pages/adminschool/attendance/QrCodeManagementPage'
-// import AttendanceSessionPage from './pages/adminschool/attendance/AttendanceSessionPage'
-// import AttendanceScannerPage from './pages/adminschool/attendance/AttendanceScannerPage'
-// import AttendanceReportPage from './pages/adminschool/attendance/AttendanceReportPage'
-
-// import RfidCardManagementPage from './pages/adminschool/attendance/RfidCardManagementPage'
-// import DeviceManagementPage from './pages/adminschool/attendance/DeviceManagementPage'
-// import KioskPage from './pages/kiosk/KioskPage'
-
+// [FIX] Import komponen ujian — dipakai bersama oleh admin sekolah & guru
 import ExamListPage from './pages/adminschool/exams/ExamListPage'
 import CreateExamPage from './pages/adminschool/exams/CreateExamPage'
 import EditExamPage from './pages/adminschool/exams/EditExamPage'
@@ -72,17 +55,8 @@ import ExamScheduleDetailPage from './pages/adminschool/exams/ExamScheduleDetail
 import ExamGradesPage from './pages/adminschool/exams/ExamGradesPage'
 import ExamSubmissionDetailPage from './pages/adminschool/exams/ExamSubmissionDetailPage'
 
-//import PersonalExamListPage from './features/personal-exam/pages/PersonalExamListPage'
-//import PersonalExamCreatePage from './features/personal-exam/pages/PersonalExamCreatePage'
-//import PersonalExamDetailPage from './features/personal-exam/pages/PersonalExamDetailPage'
-//import PersonalExamParticipantsPage from './features/personal-exam/pages/PersonalExamParticipantsPage'
-//import PersonalStudentManagementPage from './features/personal-exam/pages/PersonalStudentManagementPage'
-//import PersonalExamQrSheetPage from './features/personal-exam/pages/PersonalExamQrSheetPage'
-
 import { AuthProvider } from './contexts/AuthContext'
 import { PermissionGuard } from './components/PermissionGuard'
-
-// import TakePersonalExamPage from './pages/studentexam/TakePersonalExamPage'
 
 const ROLE_CACHE_KEY = 'tp_role_cache_v1'
 const ROLE_CACHE_TTL_MS = 5 * 60 * 1000
@@ -100,7 +74,6 @@ type CachedRole = {
 function readRoleCache(userId: string): CachedRole | null {
   try {
     const raw = localStorage.getItem(ROLE_CACHE_KEY)
-
     if (!raw) return null
     const cached: CachedRole = JSON.parse(raw)
     if (cached.userId !== userId) return null
@@ -114,7 +87,6 @@ function readRoleCache(userId: string): CachedRole | null {
   }
 }
 
-// Local Storage
 function writeRoleCache(data: CachedRole) {
   try {
     localStorage.setItem(ROLE_CACHE_KEY, JSON.stringify(data))
@@ -123,7 +95,6 @@ function writeRoleCache(data: CachedRole) {
   }
 }
 
-// Local Storage
 function clearRoleCache() {
   try {
     localStorage.removeItem(ROLE_CACHE_KEY)
@@ -131,8 +102,6 @@ function clearRoleCache() {
     // ignore
   }
 }
-
-// let lastProfileTokenFetched: string | null = null
 
 export default function App() {
   console.log('[App] MOUNT / RENDER — waktu:', new Date().toISOString())
@@ -173,7 +142,6 @@ export default function App() {
     ) => {
       if (!token || !userId) return
 
-      // Kalau ada fetch lain sedang jalan untuk user yang sama, skip
       if (fetchInFlight && lastFetchedUserIdRef.current === userId) {
         console.log('[check-role] SKIP — fetch lain sedang berjalan')
         return
@@ -196,7 +164,6 @@ export default function App() {
           }
           lastFetchedUserIdRef.current = userId
 
-          // Cache legacy (belum ada token_balance) — fetch sekali lalu update cache
           if (cached.role === 'teacher' && typeof cached.token_balance !== 'number') {
             fetchInFlight = true
             try {
@@ -284,8 +251,6 @@ export default function App() {
         if (cancelled) return
         setSession(session)
         if (session?.user) {
-          // Tandai userId sudah diambil supaya onAuthStateChange
-          // tidak double fetch
           lastFetchedUserIdRef.current = session.user.id
           checkRoleAndFetchData(session.access_token, session.user.id, false).finally(
             markBootDone
@@ -298,7 +263,6 @@ export default function App() {
         markBootDone()
       })
 
-    // Fallback: kalau getSession hang > 3 detik, tetap matikan loading
     const fallbackTimer = setTimeout(markBootDone, 3000)
 
     const {
@@ -309,7 +273,6 @@ export default function App() {
       if (event === 'SIGNED_IN') {
         setSession(session)
         if (session?.user) {
-          // Kalau getSession() sudah handle user ini, skip
           if (lastFetchedUserIdRef.current === session.user.id) {
             console.log('[auth] SIGNED_IN — sudah di-handle getSession, skip')
             return
@@ -420,11 +383,8 @@ export default function App() {
         }
       />
 
-      {/* ============================================================
-          [NEW] Route Login Guru — 2 tab (Individual & Sekolah)
-          ============================================================ */}
-          {/** matiin dulu path login gutu */}
-      {/* <Route
+      {/* --- Route Login Guru --- */}
+      <Route
         path="/login/guru"
         element={
           !session ? (
@@ -456,11 +416,9 @@ export default function App() {
             <Navigate to="/" replace />
           )
         }
-      /> */}
+      />
 
-      {/* ============================================================
-          [NEW] Route Login Admin Sekolah — tanpa tab, tanpa OAuth
-          ============================================================ */}
+      {/* --- Route Login Admin Sekolah --- */}
       <Route
         path="/login/admin-sekolah"
         element={
@@ -525,28 +483,12 @@ export default function App() {
         <Route path="timetables/:timetableId" element={<TimetableEditorPage />} />
         <Route path="time-slots" element={<TimeSlotManagementPage />} />
 
-        {/* Attendance Routes */}
-        {/* <Route path="attendance" element={<AttendanceDashboard />} />
-        <Route path="attendance/shifts" element={<ShiftManagementPage />} />
-        <Route path="attendance/calendar" element={<CalendarManagementPage />} />
-        <Route path="attendance/assignments" element={<ShiftAssignmentPage />} />
-        <Route path="attendance/qr-codes" element={<QrCodeManagementPage />} />
-        <Route path="attendance/sessions" element={<AttendanceSessionPage />} /> */}
-        {/* <Route
-          path="attendance/scanner/:sessionId"
-          element={<AttendanceScannerPage />}
-        /> */}
-        {/* <Route path="attendance/reports" element={<AttendanceReportPage />} /> */}
-        {/* RFID & Kiosk Routes */}
-        {/* <Route path="attendance/rfid-cards" element={<RfidCardManagementPage />} /> */}
-        {/* <Route path="attendance/devices" element={<DeviceManagementPage />} /> */}
-        {/* === EXAM ROUTES === */}
+        {/* === EXAM ROUTES (Admin Sekolah) === */}
         <Route path="exams" element={<ExamListPage />} />
         <Route path="exams/create" element={<CreateExamPage />} />
         <Route path="exams/:examId" element={<ExamDetailPage />} />
         <Route path="exams/:examId/edit" element={<EditExamPage />} />
 
-        {/* Exam Schedules Routes */}
         <Route path="exam-schedules" element={<ExamSchedulePage />} />
         <Route path="exam-schedules/create" element={<CreateExamSchedulePage />} />
         <Route path="exam-schedules/:scheduleId/monitor" element={<ExamMonitorPage />} />
@@ -557,11 +499,7 @@ export default function App() {
         />
         <Route path="exam-schedules/:scheduleId/edit" element={<CreateExamSchedulePage />} />
         <Route path="exam-schedules/:scheduleId" element={<ExamScheduleDetailPage />} />
-        {/* ================== */}
       </Route>
-
-      {/* Kiosk Route — tanpa login, auth via device code */}
-      {/* <Route path="/kiosk/:deviceCode" element={<KioskPage />} /> */}
 
       {/* --- Route Register & Publik --- */}
       <Route path="/register" element={<RegisterPage />} />
@@ -572,12 +510,6 @@ export default function App() {
       <Route path="/update-password" element={<UpdatePasswordPage />} />
       <Route path="/school-exam" element={<TakeSchoolExamPage />} />
       <Route path="/personal-exam" element={<TakePersonalExamPage />} />
-
-      {/* ==========================================
-          Route Public Personal Exam (untuk siswa)
-          Uncomment setelah R&D selesai
-      ========================================== */}
-      {/* <Route path="/personal-exam" element={<TakePersonalExamPage />} /> */}
 
       {/* --- Route User Guru --- */}
       <Route
@@ -631,71 +563,103 @@ export default function App() {
         <Route path="ebooks" element={<EbooksPage />} />
         <Route path="exam-session" element={<ExamSessionPage session={session} />} />
 
-        {/* ==========================================
-            Personal Exam Routes — GUARDED by permission
-        ========================================== */}
-        {/* <Route
-          path="personal-exams"
+        {/* ============================================================
+            [FIX] EXAM ROUTES untuk GURU
+            Path relatif terhadap "/" (mis. /exams, /exam-schedules)
+            Dibungkus PermissionGuard agar hanya guru ber-permission yang bisa akses.
+            Komponen yang dipakai sama dengan admin sekolah — pastikan
+            komponen tersebut pakai navigate relative (tanpa leading slash)
+            atau pakai ExamBasePathContext.
+        ============================================================ */}
+        <Route
+          path="exams"
           element={
-            <PermissionGuard permission="personal_exam.read">
-              <PersonalExamListPage />
+            <PermissionGuard permission="exam.read">
+              <ExamListPage />
             </PermissionGuard>
           }
-        /> */}
+        />
+        <Route
+          path="exams/create"
+          element={
+            <PermissionGuard permission="exam.create">
+              <CreateExamPage />
+            </PermissionGuard>
+          }
+        />
+        <Route
+          path="exams/:examId"
+          element={
+            <PermissionGuard permission="exam.read">
+              <ExamDetailPage />
+            </PermissionGuard>
+          }
+        />
+        <Route
+          path="exams/:examId/edit"
+          element={
+            <PermissionGuard permission="exam.edit">
+              <EditExamPage />
+            </PermissionGuard>
+          }
+        />
 
-        {/* <Route
-          path="personal-exams/create"
+        <Route
+          path="exam-schedules"
           element={
-            <PermissionGuard permission="personal_exam.create">
-              <PersonalExamCreatePage />
+            <PermissionGuard permission="exam.read">
+              <ExamSchedulePage />
             </PermissionGuard>
           }
-        /> */}
-
-        {/* <Route
-          path="personal-exams/:examId"
+        />
+        <Route
+          path="exam-schedules/create"
           element={
-            <PermissionGuard permission="personal_exam.read">
-              <PersonalExamDetailPage />
+            <PermissionGuard permission="exam.create">
+              <CreateExamSchedulePage />
             </PermissionGuard>
           }
-        /> */}
-
-        {/* <Route
-          path="personal-exams/:examId/edit"
+        />
+        <Route
+          path="exam-schedules/:scheduleId/monitor"
           element={
-            <PermissionGuard permission="personal_exam.edit">
-              <PersonalExamCreatePage />
+            <PermissionGuard permission="exam.read">
+              <ExamMonitorPage />
             </PermissionGuard>
           }
-        /> */}
-
-        {/* <Route
-          path="personal-exams/:examId/participants"
+        />
+        <Route
+          path="exam-schedules/:scheduleId/grades"
           element={
-            <PermissionGuard permission="personal_exam.read">
-              <PersonalExamParticipantsPage />
+            <PermissionGuard permission="exam.read">
+              <ExamGradesPage />
             </PermissionGuard>
           }
-        /> */}
-
-        {/* <Route
-          path="personal-exams/:examId/qr-sheet"
+        />
+        <Route
+          path="exam-schedules/:scheduleId/submissions/:submissionId"
           element={
-            <PermissionGuard permission="personal_exam.read">
-              <PersonalExamQrSheetPage />
+            <PermissionGuard permission="exam.read">
+              <ExamSubmissionDetailPage />
             </PermissionGuard>
           }
-        /> */}
-
-        {/* <Route
-          path="personal-students"
+        />
+        <Route
+          path="exam-schedules/:scheduleId/edit"
           element={
-            <PermissionGuard permission="personal_student.read">
-              <PersonalStudentManagementPage />
+            <PermissionGuard permission="exam.create">
+              <CreateExamSchedulePage />
             </PermissionGuard>
           }
-        /> */}
+        />
+        <Route
+          path="exam-schedules/:scheduleId"
+          element={
+            <PermissionGuard permission="exam.read">
+              <ExamScheduleDetailPage />
+            </PermissionGuard>
+          }
+        />
 
         {/* ==========================================
             Route khusus WALI KELAS — placeholder dulu
