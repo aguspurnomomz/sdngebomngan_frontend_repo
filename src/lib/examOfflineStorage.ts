@@ -14,7 +14,9 @@ export type ExamSnapshot = {
   passing_score: number
   total_score: number
   started_at: string            
-  expires_at: string            
+  expires_at: string           
+  server_time: string        
+  remaining_seconds: number  
   questions: ExamQuestion[]
   saved_at: string
 }

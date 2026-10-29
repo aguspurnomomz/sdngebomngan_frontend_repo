@@ -147,16 +147,57 @@ export default function TakeSchoolExamPage() {
   }, [submitting])
 
 
+  // useEffect(() => {
+  //   if (phase !== 'exam' || !snapshot) return
+
+  //   autoSubmitTriggeredRef.current = false
+
+  //   const tick = () => {
+  //     const expires = new Date(snapshot.expires_at).getTime()
+  //     const remaining = Math.max(0, Math.floor((expires - Date.now()) / 1000))
+  //     setTimeLeft(remaining)
+  //     timeLeftRef.current = remaining 
+
+  //     if (
+  //       remaining <= 0 &&
+  //       !autoSubmitTriggeredRef.current &&
+  //       !submittingRef.current
+  //     ) {
+  //       autoSubmitTriggeredRef.current = true
+  //       console.log('[TakeExam] ⏰ Timer habis — auto-submit triggered')
+  //       handleAutoSubmit()
+  //     }
+  //   }
+
+  //   tick()
+  //   const interval = window.setInterval(tick, 1000)
+  //   return () => window.clearInterval(interval)
+  // }, [phase, snapshot]) 
+
   useEffect(() => {
     if (phase !== 'exam' || !snapshot) return
 
     autoSubmitTriggeredRef.current = false
 
+    // Simpan selisih waktu server vs client, supaya timer tidak terpengaruh jam lokal
+    const clientNow = Date.now()
+    //const serverNow = new Date(snapshot.server_time).getTime()
+    //const serverOffset = serverNow - clientNow
+
+    // Basis timer = remaining_seconds dari server (bukan from expires_at)
+    const baseRemaining = snapshot.remaining_seconds ?? Math.max(
+      0,
+      Math.floor((new Date(snapshot.expires_at).getTime() - clientNow) / 1000)
+    )
+    const localStartAt = Date.now()
+
     const tick = () => {
-      const expires = new Date(snapshot.expires_at).getTime()
-      const remaining = Math.max(0, Math.floor((expires - Date.now()) / 1000))
+      // elapsed = waktu berlalu sejak snapshot disimpan
+      const elapsed = Math.floor((Date.now() - localStartAt) / 1000)
+      const remaining = Math.max(0, baseRemaining - elapsed)
+
       setTimeLeft(remaining)
-      timeLeftRef.current = remaining 
+      timeLeftRef.current = remaining
 
       if (
         remaining <= 0 &&
@@ -172,8 +213,7 @@ export default function TakeSchoolExamPage() {
     tick()
     const interval = window.setInterval(tick, 1000)
     return () => window.clearInterval(interval)
-  }, [phase, snapshot]) 
-
+  }, [phase, snapshot])
 
   useEffect(() => {
     if (phase !== 'exam') return
@@ -304,11 +344,31 @@ export default function TakeSchoolExamPage() {
         last_warning_at: string | null
         last_warning_message: string
         is_submitted: boolean
+        remaining_seconds: number      
+        expires_at: string           
+        server_time: string 
       }>(`${API_URL}/api/exam/${snapshot.session_token}/status`, {
         timeout: 5000,
       })
 
       const data = res.data
+      if (typeof data.remaining_seconds === 'number') {
+        const drift = Math.abs(timeLeftRef.current - data.remaining_seconds)
+        if (drift > 60) {
+          console.log('[TakeExam] Timer resync from server:', data.remaining_seconds)
+          setTimeLeft(data.remaining_seconds)
+          timeLeftRef.current = data.remaining_seconds
+          // Update snapshot agar base timer ikut berubah
+          const updatedSnap = {
+            ...snapshot,
+            expires_at: data.expires_at,
+            server_time: data.server_time,
+            remaining_seconds: data.remaining_seconds,
+          }
+          setSnapshot(updatedSnap)
+          saveSnapshot(updatedSnap)
+        }
+      }
 
       // Handle block
       if (data.is_blocked) {
@@ -533,6 +593,8 @@ export default function TakeSchoolExamPage() {
         total_score: number
         started_at: string
         expires_at: string
+        server_time: string       
+        remaining_seconds: number 
         questions: ExamQuestion[]
       }>(`${API_URL}/api/exam/start`, {
         nisn: nisn.trim(),
