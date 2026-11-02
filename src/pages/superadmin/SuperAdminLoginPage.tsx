@@ -18,6 +18,17 @@ interface ApiErrorBody {
   }
 }
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+
+function safeParseJSON<T>(str: string | null): T | null {
+  if (!str) return null
+  try {
+    return JSON.parse(str) as T
+  } catch {
+    return null
+  }
+}
+
 export default function SuperAdminLoginPage({ onLoginSuccess }: SuperAdminLoginPageProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -26,32 +37,28 @@ export default function SuperAdminLoginPage({ onLoginSuccess }: SuperAdminLoginP
   const [errorMsg, setErrorMsg] = useState('')
   const [lockCountdown, setLockCountdown] = useState<number>(0)
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
-
-  // Countdown untuk lockout
   useEffect(() => {
     let timer: number
     if (lockCountdown > 0) {
       timer = window.setInterval(() => {
         setLockCountdown((prev) => {
           if (prev <= 1) {
-            setErrorMsg('')
+            setErrorMsg('') 
             return 0
           }
-          const nextVal = prev - 1
-          setErrorMsg(`Akun dikunci sementara. Coba lagi dalam ${nextVal} detik.`)
-          return nextVal
+          return prev - 1
         })
       }, 1000)
     }
     return () => clearInterval(timer)
   }, [lockCountdown])
 
-  // Ambil lokasi saat halaman dimuat
   useEffect(() => {
+    let isMounted = true
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          if (!isMounted) return
           const coords = {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
@@ -64,17 +71,21 @@ export default function SuperAdminLoginPage({ onLoginSuccess }: SuperAdminLoginP
         { timeout: 10000 }
       )
     }
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (lockCountdown > 0) return
+    if (lockCountdown > 0 || loading) return
 
     setLoading(true)
     setErrorMsg('')
 
-    const cachedLocation = localStorage.getItem('superadmin_location')
-    const locationData = cachedLocation ? JSON.parse(cachedLocation) : null
+    const locationData = safeParseJSON<{ latitude: number; longitude: number }>(
+      localStorage.getItem('superadmin_location')
+    )
 
     try {
       const response = await axios.post(
@@ -86,7 +97,6 @@ export default function SuperAdminLoginPage({ onLoginSuccess }: SuperAdminLoginP
         },
       )
 
-      // === PERUBAHAN: response.data sekarang punya nested "data" ===
       const payload = response.data?.data
       const token: string | undefined = payload?.token
       const adminName: string | undefined = payload?.admin?.name
@@ -99,20 +109,22 @@ export default function SuperAdminLoginPage({ onLoginSuccess }: SuperAdminLoginP
       localStorage.setItem('superadmin_token', token)
       localStorage.setItem('superadmin_name', adminName)
 
-      // Opsional: simpan expires_in untuk refresh logic
       if (payload?.expires_in) {
         const expAt = Date.now() + payload.expires_in * 1000
         localStorage.setItem('superadmin_token_exp', String(expAt))
       }
 
+  
+      setPassword('')
       onLoginSuccess(token, adminName)
     } catch (err: any) {
+      setPassword('')
+
       const status: number | undefined = err.response?.status
       const body: ApiErrorBody | undefined = err.response?.data
       const errCode = body?.error?.code
       const errMessage = body?.error?.message
 
-      // === PERUBAHAN: 429 (bukan 423 lagi) untuk lockout ===
       if (status === 429 && errCode === 'ACCOUNT_LOCKED') {
         const retryAfter =
           body?.error?.retry_after_seconds ??
@@ -125,12 +137,10 @@ export default function SuperAdminLoginPage({ onLoginSuccess }: SuperAdminLoginP
             `Terlalu banyak percobaan gagal. Akun dikunci sementara selama ${retryAfter} detik.`,
         )
       } else if (status === 401 && errCode === 'INVALID_CREDENTIALS') {
-        // Pesan sudah generik dari backend ("Email atau kata sandi salah")
         setErrorMsg(errMessage || 'Email atau kata sandi salah')
       } else if (status === 400 && errCode === 'INVALID_INPUT') {
         setErrorMsg(errMessage || 'Format input tidak valid')
       } else if (errMessage) {
-        // Fallback: pakai pesan dari backend kalau ada
         setErrorMsg(errMessage)
       } else {
         setErrorMsg('Gagal terhubung ke server backend.')

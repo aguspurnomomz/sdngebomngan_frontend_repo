@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import axios from 'axios'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,6 +31,8 @@ interface SuperAdminUsersProps {
   onRefresh: () => void
 }
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+const ITEMS_PER_PAGE = 10
 
 function TeacherTypeBadge({ type }: { type: 'b2c' | 'b2b' | 'hybrid' }) {
   const styles: Record<string, string> = {
@@ -53,16 +55,49 @@ function TeacherTypeBadge({ type }: { type: 'b2c' | 'b2b' | 'hybrid' }) {
 export default function SuperAdminUsers({ users, loading, onRefresh }: SuperAdminUsersProps) {
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState<'all' | 'b2c' | 'b2b' | 'hybrid'>('all')
-
-
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+  
+  const [errorMsg, setErrorMsg] = useState('')
+
+  const filteredUsers = useMemo(() => {
+    const lowerSearch = search.trim().toLowerCase()
+    return users
+      .filter((u) => filterType === 'all' || u.teacher_type === filterType)
+      .filter((u) =>
+        [u.nama_guru, u.nip_guru, u.nama_sekolah, u.mata_pelajaran]
+          .join(' ')
+          .toLowerCase()
+          .includes(lowerSearch)
+      )
+  }, [users, filterType, search])
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / ITEMS_PER_PAGE))
+
+  useEffect(() => {
+    setCurrentPage((prev) => Math.min(prev, totalPages))
+  }, [totalPages])
+
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const currentUsers = filteredUsers.slice(startIndex, startIndex + ITEMS_PER_PAGE)
+
+  const counts = useMemo(() => {
+    return users.reduce(
+      (acc, u) => {
+        acc.all++
+        if (u.teacher_type === 'b2c') acc.b2c++
+        if (u.teacher_type === 'b2b') acc.b2b++
+        if (u.teacher_type === 'hybrid') acc.hybrid++
+        return acc
+      },
+      { all: 0, b2c: 0, b2b: 0, hybrid: 0 }
+    )
+  }, [users])
 
   const handleToggleStatus = async (userId: string, currentStatus: boolean) => {
     const actionText = currentStatus ? 'memblokir' : 'mengaktifkan kembali'
     if (!window.confirm(`Apakah Anda yakin ingin ${actionText} pengguna ini?`)) return
 
+    setErrorMsg('')
     try {
       const token = localStorage.getItem('superadmin_token')
       await axios.patch(
@@ -72,33 +107,14 @@ export default function SuperAdminUsers({ users, loading, onRefresh }: SuperAdmi
       )
       onRefresh()
     } catch (err: any) {
-      alert('Gagal mengubah status pengguna.')
+      setErrorMsg(err.response?.data?.error?.message || 'Gagal mengubah status pengguna.')
+      setTimeout(() => setErrorMsg(''), 4000)
       console.error(err)
     }
   }
 
-
-  const filteredUsers = users
-    .filter((u) => filterType === 'all' || u.teacher_type === filterType)
-    .filter((u) =>
-      [u.nama_guru, u.nip_guru, u.nama_sekolah, u.mata_pelajaran]
-        .join(' ')
-        .toLowerCase()
-        .includes(search.trim().toLowerCase())
-    )
-
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage) || 1
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const currentUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage)
-
-
-  const handlePrevPage = () => {
-    setCurrentPage((prev) => Math.max(prev - 1, 1))
-  }
-
-  const handleNextPage = () => {
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-  }
+  const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1))
+  const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages))
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value)
@@ -109,12 +125,6 @@ export default function SuperAdminUsers({ users, loading, onRefresh }: SuperAdmi
     setFilterType(type)
     setCurrentPage(1)   
   }
-
-
-  const countB2C = users.filter((u) => u.teacher_type === 'b2c').length
-  const countB2B = users.filter((u) => u.teacher_type === 'b2b').length
-  const countHybrid = users.filter((u) => u.teacher_type === 'hybrid').length
-
 
   return (
     <div className="space-y-6">
@@ -147,15 +157,17 @@ export default function SuperAdminUsers({ users, loading, onRefresh }: SuperAdmi
         </div>
       </div>
 
+      {/* error UI*/}
+      {errorMsg && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-3 flex items-center gap-2 text-red-900">
+          <span className="text-xs font-semibold">{errorMsg}</span>
+        </div>
+      )}
+
       {/* TAB FILTER */}
       <div className="flex gap-2 border-b border-tp-border">
         {(['all', 'b2c', 'b2b', 'hybrid'] as const).map((tab) => {
-          const count =
-            tab === 'all' ? users.length :
-            tab === 'b2c' ? countB2C :
-            tab === 'b2b' ? countB2B :
-            countHybrid
-
+          const count = counts[tab]
           const label =
             tab === 'all' ? 'Semua' :
             tab === 'b2c' ? 'B2C' :
@@ -229,7 +241,7 @@ export default function SuperAdminUsers({ users, loading, onRefresh }: SuperAdmi
                       </div>
                     </td>
 
-                    {/* Type + daftar sekolah membership */}
+                    {/* Type daftar sekolah membership */}
                     <td className="px-6 py-4 text-center">
                       <TeacherTypeBadge type={user.teacher_type || 'b2c'} />
                       {user.memberships && user.memberships.length > 0 && (
@@ -298,7 +310,7 @@ export default function SuperAdminUsers({ users, loading, onRefresh }: SuperAdmi
               Menampilkan{' '}
               <span className="font-semibold text-tp-text">{startIndex + 1}</span> -{' '}
               <span className="font-semibold text-tp-text">
-                {Math.min(startIndex + itemsPerPage, filteredUsers.length)}
+                {Math.min(startIndex + ITEMS_PER_PAGE, filteredUsers.length)}
               </span>{' '}
               dari{' '}
               <span className="font-semibold text-tp-text">{filteredUsers.length}</span>{' '}

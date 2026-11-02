@@ -1,4 +1,9 @@
-import React, { useState } from 'react'
+import React, { 
+  // useCallback, 
+  useEffect, 
+  useMemo, 
+  // useRef, 
+  useState } from 'react'
 import axios from 'axios'
 import * as Sentry from '@sentry/react'
 import { Button } from '@/components/ui/button'
@@ -20,10 +25,21 @@ interface LogItem {
 
 interface SuperAdminSecurityProps {
   logs: LogItem[]
-  onRefreshLogs: () => void
+  onRefreshLogs: () => void | Promise<void>
 }
 
 const MIN_PASSWORD_LENGTH = 12
+const ITEMS_PER_PAGE = 5
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+
+function parseCachedLocation(): any {
+  try {
+    const raw = localStorage.getItem('superadmin_location')
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
 
 export default function SuperAdminSecurity({ logs, onRefreshLogs }: SuperAdminSecurityProps) {
   const [oldPassword, setOldPassword] = useState('')
@@ -39,29 +55,68 @@ export default function SuperAdminSecurity({ logs, onRefreshLogs }: SuperAdminSe
 
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 5
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(logs.length / ITEMS_PER_PAGE)),
+    [logs.length]
+  )
+
+  useEffect(() => {
+    setCurrentPage((prev) => Math.min(prev, totalPages))
+  }, [totalPages])
+
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const currentLogs = useMemo(
+    () => logs.slice(startIndex, startIndex + ITEMS_PER_PAGE),
+    [logs, startIndex]
+  )
+
+  useEffect(() => {
+    if (!showConfirmModal) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !changingPass) setShowConfirmModal(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [showConfirmModal, changingPass])
 
   const handleTestSentryFrontend = () => {
+    setErrorMsg('')
+    setSuccessMsg('')
     try {
       throw new Error('Test Error dari Frontend React Superadmin!')
     } catch (err) {
-      Sentry.captureException(err)
-      alert('Berhasil! Error tes Frontend telah dikirim ke Sentry.')
+      try {
+        Sentry.captureException(err)
+      } catch {
+        /* Sentry belum di-init, abaikan */
+      }
+      setSuccessMsg('Berhasil! Error tes Frontend telah dikirim ke Sentry.')
     }
   }
 
   const handleTestSentryBackend = async () => {
+    setErrorMsg('')
+    setSuccessMsg('')
     try {
       await axios.get(`${API_URL}/debug-sentry`)
+      // Kalau tidak throw, endpoint tidak panic — anggap warning
+      setErrorMsg('Endpoint tidak mengembalikan error. Pastikan route /debug-sentry memicu panic di backend.')
     } catch (err: any) {
-      alert('Berhasil! Endpoint tes Backend berhasil dipicu (Status 500). Cek dashboard Sentry Anda.')
+      if (err.response?.status === 500) {
+        setSuccessMsg('Berhasil! Endpoint tes Backend berhasil dipicu (Status 500). Cek dashboard Sentry Anda.')
+      } else {
+        setErrorMsg(
+          `Gagal memicu endpoint Sentry: ${err.response?.status || err.message || 'unknown error'}`
+        )
+      }
     }
   }
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (changingPass) return
+
     setErrorMsg('')
     setSuccessMsg('')
 
@@ -69,94 +124,118 @@ export default function SuperAdminSecurity({ logs, onRefreshLogs }: SuperAdminSe
       setErrorMsg(`Kata sandi baru minimal ${MIN_PASSWORD_LENGTH} karakter`)
       return
     }
-
     if (newPassword === oldPassword) {
       setErrorMsg('Kata sandi baru tidak boleh sama dengan kata sandi lama')
       return
     }
-
     if (newPassword !== confirmPassword) {
       setErrorMsg('Konfirmasi kata sandi baru tidak cocok!')
       return
     }
-
     setShowConfirmModal(true)
   }
 
   const executeChangePassword = async () => {
-  setChangingPass(true)
-  setErrorMsg('')
-  setSuccessMsg('')
+    setChangingPass(true)
+    setErrorMsg('')
+    setSuccessMsg('')
 
-  try {
-    const token = localStorage.getItem('superadmin_token')
-    const cachedLocation = localStorage.getItem('superadmin_location')
-    const locationData = cachedLocation ? JSON.parse(cachedLocation) : null
+    try {
+      const token = localStorage.getItem('superadmin_token')
+      const locationData = parseCachedLocation() 
 
-    const response = await axios.post(
-      `${API_URL}/api/superadmin/change-password`,
-      {
-        old_password: oldPassword,
-        new_password: newPassword,
-        location: locationData,
-      },
-      { headers: { Authorization: `Bearer ${token}` } },
-    )
+      const response = await axios.post(
+        `${API_URL}/api/superadmin/change-password`,
+        {
+          old_password: oldPassword,
+          new_password: newPassword,
+          location: locationData,
+        },
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
 
-    setShowConfirmModal(false)
+      if (response.data?.session_ended) {
+        setSuccessMsg('Kata sandi berhasil diubah! Anda akan dialihkan ke halaman login...')
+        localStorage.removeItem('superadmin_token')
+        localStorage.removeItem('superadmin_name')
+        localStorage.removeItem('superadmin_token_exp')
+        setTimeout(() => {
+          window.location.href = '/superadmin/login'
+        }, 2000)
+        return
+      }
 
-    if (response.data?.session_ended) {
-      setSuccessMsg('Kata sandi berhasil diubah! Anda akan dialihkan ke halaman login...')
-      localStorage.removeItem('superadmin_token')
-      localStorage.removeItem('superadmin_name')
-      localStorage.removeItem('superadmin_token_exp')
+      setSuccessMsg('Kata sandi berhasil diubah!')
+      setOldPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+      await Promise.resolve(onRefreshLogs()).catch(() => {}) // P0-4: safe call
+    } catch (err: any) {
+      const errCode = err.response?.data?.error?.code
+      const errMsg = err.response?.data?.error?.message
 
-      setTimeout(() => {
-        window.location.href = '/superadmin/login'
-      }, 2000)
-      return
+      if (errCode === 'INVALID_OLD_PASSWORD') {
+        setErrorMsg('Kata sandi lama yang Anda masukkan salah')
+      } else if (errCode === 'PASSWORD_TOO_SHORT') {
+        setErrorMsg(`Kata sandi baru minimal ${MIN_PASSWORD_LENGTH} karakter`)
+      } else if (errCode === 'PASSWORD_UNCHANGED') {
+        setErrorMsg('Kata sandi baru tidak boleh sama dengan kata sandi lama')
+      } else if (errMsg) {
+        setErrorMsg(errMsg)
+      } else {
+        setErrorMsg('Gagal mengubah kata sandi. Silakan coba lagi.')
+      }
+    } finally {
+      setShowConfirmModal(false)
+      setChangingPass(false)
     }
+  }
 
+  const handlePrevPage = () => setCurrentPage((p) => Math.max(p - 1, 1))
+  const handleNextPage = () => setCurrentPage((p) => Math.min(p + 1, totalPages))
 
-    setSuccessMsg('Kata sandi berhasil diubah!')
-    setOldPassword('')
-    setNewPassword('')
-    setConfirmPassword('')
-    onRefreshLogs()
-
-  } catch (err: any) {
-    setShowConfirmModal(false)
-
-    const errCode = err.response?.data?.error?.code
-    const errMsg = err.response?.data?.error?.message
-
-    if (errCode === 'INVALID_OLD_PASSWORD') {
-      setErrorMsg('Kata sandi lama yang Anda masukkan salah')
-    } else if (errCode === 'PASSWORD_TOO_SHORT') {
-      setErrorMsg(`Kata sandi baru minimal 12 karakter`)
-    } else if (errCode === 'PASSWORD_UNCHANGED') {
-      setErrorMsg('Kata sandi baru tidak boleh sama dengan kata sandi lama')
-    } else if (errMsg) {
-      setErrorMsg(errMsg)
-    } else {
-      setErrorMsg(err.message || 'Gagal mengubah kata sandi')
+  const formatIPAddress = (ip: string) => {
+    if (!ip) return '-'
+    if (ip === '::1' || ip === '127.0.0.1') {
+      return `${ip} (localhost)`
     }
-  } finally {
-    setChangingPass(false)
-  }
-}
-
-  const totalPages = Math.ceil(logs.length / itemsPerPage) || 1
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const currentLogs = logs.slice(startIndex, startIndex + itemsPerPage)
-
-  const handlePrevPage = () => {
-    setCurrentPage((prev) => Math.max(prev - 1, 1))
+    return ip
   }
 
-  const handleNextPage = () => {
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-  }
+  const PasswordField = ({
+    label, value, onChange, visible, onToggle, minLength,
+  }: {
+    label: string
+    value: string
+    onChange: (v: string) => void
+    visible: boolean
+    onToggle: () => void
+    minLength?: number
+  }) => (
+    <div className="grid gap-1.5">
+      <Label className="text-xs">{label}</Label>
+      <div className="relative flex items-center">
+        <Input
+          type={visible ? 'text' : 'password'}
+          required
+          minLength={minLength}
+          placeholder="••••••••"
+          className="pr-10"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+        <button
+          type="button"
+          className="absolute right-3 text-gray-400 hover:text-gray-600 focus:outline-none"
+          onClick={onToggle}
+          tabIndex={-1}
+          aria-label={visible ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+        >
+          {visible ? <EyeOff size={18} /> : <Eye size={18} />}
+        </button>
+      </div>
+    </div>
+  )
 
   return (
     <div className="flex flex-col gap-6 relative">
@@ -179,7 +258,6 @@ export default function SuperAdminSecurity({ logs, onRefreshLogs }: SuperAdminSe
                 {errorMsg}
               </div>
             )}
-
             {successMsg && (
               <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-medium text-emerald-700">
                 {successMsg}
@@ -187,73 +265,28 @@ export default function SuperAdminSecurity({ logs, onRefreshLogs }: SuperAdminSe
             )}
 
             <form onSubmit={handleFormSubmit} className="flex flex-col gap-4">
-              <div className="grid gap-1.5">
-                <Label className="text-xs">Kata Sandi Lama</Label>
-                <div className="relative flex items-center">
-                  <Input
-                    type={showOldPass ? 'text' : 'password'}
-                    required
-                    placeholder="••••••••"
-                    className="pr-10"
-                    value={oldPassword}
-                    onChange={(e) => setOldPassword(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 text-gray-400 hover:text-gray-600 focus:outline-none"
-                    onClick={() => setShowOldPass(!showOldPass)}
-                    tabIndex={-1}
-                  >
-                    {showOldPass ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid gap-1.5">
-                {/* ===== PERUBAHAN: label jadi min 12 ===== */}
-                <Label className="text-xs">Kata Sandi Baru (Min. {MIN_PASSWORD_LENGTH} Karakter)</Label>
-                <div className="relative flex items-center">
-                  <Input
-                    type={showNewPass ? 'text' : 'password'}
-                    required
-                    minLength={MIN_PASSWORD_LENGTH}
-                    placeholder="••••••••"
-                    className="pr-10"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 text-gray-400 hover:text-gray-600 focus:outline-none"
-                    onClick={() => setShowNewPass(!showNewPass)}
-                    tabIndex={-1}
-                  >
-                    {showNewPass ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid gap-1.5">
-                <Label className="text-xs">Konfirmasi Kata Sandi Baru</Label>
-                <div className="relative flex items-center">
-                  <Input
-                    type={showConfirmPass ? 'text' : 'password'}
-                    required
-                    placeholder="••••••••"
-                    className="pr-10"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 text-gray-400 hover:text-gray-600 focus:outline-none"
-                    onClick={() => setShowConfirmPass(!showConfirmPass)}
-                    tabIndex={-1}
-                  >
-                    {showConfirmPass ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
+              <PasswordField
+                label="Kata Sandi Lama"
+                value={oldPassword}
+                onChange={setOldPassword}
+                visible={showOldPass}
+                onToggle={() => setShowOldPass(!showOldPass)}
+              />
+              <PasswordField
+                label={`Kata Sandi Baru (Min. ${MIN_PASSWORD_LENGTH} Karakter)`}
+                value={newPassword}
+                onChange={setNewPassword}
+                visible={showNewPass}
+                onToggle={() => setShowNewPass(!showNewPass)}
+                minLength={MIN_PASSWORD_LENGTH}
+              />
+              <PasswordField
+                label="Konfirmasi Kata Sandi Baru"
+                value={confirmPassword}
+                onChange={setConfirmPassword}
+                visible={showConfirmPass}
+                onToggle={() => setShowConfirmPass(!showConfirmPass)}
+              />
 
               <div className="mt-2 flex justify-end">
                 <Button
@@ -358,7 +391,7 @@ export default function SuperAdminSecurity({ logs, onRefreshLogs }: SuperAdminSe
                         </span>
                       </td>
                       <td className="px-5 py-3.5 text-xs font-mono text-tp-muted">
-                        {log.ip_address || '-'}
+                        {formatIPAddress(log.ip_address)}
                       </td>
                       <td className="px-5 py-3.5 text-xs text-tp-muted whitespace-nowrap">
                         {log.location ? (
@@ -384,12 +417,11 @@ export default function SuperAdminSecurity({ logs, onRefreshLogs }: SuperAdminSe
             </table>
           </div>
 
-          {/* Kontrol Navigasi Pagination */}
           {logs.length > 0 && (
             <div className="flex items-center justify-between border-t border-tp-border bg-gray-50/50 px-5 py-3 text-xs text-tp-muted">
               <div>
                 Menampilkan <span className="font-semibold text-tp-text">{startIndex + 1}</span> -{' '}
-                <span className="font-semibold text-tp-text">{Math.min(startIndex + itemsPerPage, logs.length)}</span> dari{' '}
+                <span className="font-semibold text-tp-text">{Math.min(startIndex + ITEMS_PER_PAGE, logs.length)}</span> dari{' '}
                 <span className="font-semibold text-tp-text">{logs.length}</span> log
               </div>
               <div className="flex items-center gap-2">
@@ -426,14 +458,8 @@ export default function SuperAdminSecurity({ logs, onRefreshLogs }: SuperAdminSe
       {showConfirmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            {/* Icon Peringatan */}
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-rose-50">
-              <svg
-                className="h-8 w-8 text-rose-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="h-8 w-8 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"

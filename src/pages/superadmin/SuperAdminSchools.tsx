@@ -255,7 +255,7 @@ export default function SuperAdminSchools() {
                 type="text"
                 required
                 className="w-full rounded-xl border border-tp-border px-3.5 py-2.5 text-sm outline-none focus:border-tp-green"
-                placeholder="Contoh: SMAN 1 Bandung"
+                placeholder="Contoh: SMA"
                 value={schoolName}
                 onChange={(e) => setSchoolName(e.target.value)}
               />

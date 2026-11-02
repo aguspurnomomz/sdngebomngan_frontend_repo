@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../../lib/axios'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -26,14 +26,12 @@ interface Permission {
   description: string
 }
 
-
 export default function SuperAdminRoles() {
   const [roles, setRoles] = useState<RoleItem[]>([])
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
 
-  // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingRole, setEditingRole] = useState<RoleItem | null>(null)
   const [formCode, setFormCode] = useState('')
@@ -47,18 +45,31 @@ export default function SuperAdminRoles() {
   const [permissions, setPermissions] = useState<Permission[]>([])
   const [selectedRoleForPerm, setSelectedRoleForPerm] = useState<RoleItem | null>(null)
   const [rolePermissionIDs, setRolePermissionIDs] = useState<string[]>([])
+  const [initialPermIDs, setInitialPermIDs] = useState<string[]>([])
   const [isPermModalOpen, setIsPermModalOpen] = useState(false)
+  const [loadingPerm, setLoadingPerm] = useState(false)
   const [savingPerm, setSavingPerm] = useState(false)
   const [permError, setPermError] = useState('')
 
-  const showSuccess = (m: string) => {
+  const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const errorTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const showSuccess = useCallback((m: string) => {
+    if (successTimer.current) clearTimeout(successTimer.current)
     setSuccessMsg(m)
-    setTimeout(() => setSuccessMsg(''), 4000)
-  }
-  const showError = (m: string) => {
+    successTimer.current = setTimeout(() => setSuccessMsg(''), 4000)
+  }, [])
+
+  const showError = useCallback((m: string) => {
+    if (errorTimer.current) clearTimeout(errorTimer.current)
     setErrorMsg(m)
-    setTimeout(() => setErrorMsg(''), 5000)
-  }
+    errorTimer.current = setTimeout(() => setErrorMsg(''), 5000)
+  }, [])
+
+  useEffect(() => () => {
+    if (successTimer.current) clearTimeout(successTimer.current)
+    if (errorTimer.current) clearTimeout(errorTimer.current)
+  }, [])
 
   const fetchRoles = useCallback(async () => {
     setLoading(true)
@@ -66,13 +77,12 @@ export default function SuperAdminRoles() {
     try {
       const token = localStorage.getItem('superadmin_token')
       const headers = { Authorization: `Bearer ${token}` }
-      
-      // Fetch roles DAN permissions sekaligus
+
       const [rolesRes, permsRes] = await Promise.all([
         api.get('/api/superadmin/school-roles?include_inactive=true', { headers }),
         api.get('/api/superadmin/permissions', { headers })
       ])
-      
+
       setRoles(rolesRes.data?.roles ?? [])
       setPermissions(permsRes.data?.permissions ?? [])
     } catch (err: any) {
@@ -84,6 +94,14 @@ export default function SuperAdminRoles() {
   }, [])
 
   useEffect(() => { fetchRoles() }, [fetchRoles])
+
+  const groupedPermissions = useMemo(() => {
+    return permissions.reduce((acc, p) => {
+      if (!acc[p.module]) acc[p.module] = []
+      acc[p.module].push(p)
+      return acc
+    }, {} as Record<string, Permission[]>)
+  }, [permissions])
 
   const openAddModal = () => {
     setEditingRole(null)
@@ -184,19 +202,29 @@ export default function SuperAdminRoles() {
   }
 
   const handleOpenPermModal = async (r: RoleItem) => {
-  setSelectedRoleForPerm(r)
-  setPermError('')
-  try {
-    const token = localStorage.getItem('superadmin_token')
-    const res = await api.get(`/api/superadmin/school-roles/${r.id}/permissions`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    setRolePermissionIDs(res.data.permission_ids || [])
+    setRolePermissionIDs([])
+    setInitialPermIDs([])
+    setPermError('')
+    setSelectedRoleForPerm(r)
+    setLoadingPerm(true)
     setIsPermModalOpen(true)
-  } catch (err) {
-    alert('Gagal memuat permission role')
+
+    try {
+      const token = localStorage.getItem('superadmin_token')
+      const res = await api.get(`/api/superadmin/school-roles/${r.id}/permissions`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      const ids: string[] = res.data.permission_ids || []
+      setRolePermissionIDs(ids)
+      setInitialPermIDs(ids)
+    } catch (err: any) {
+      setIsPermModalOpen(false)
+      setSelectedRoleForPerm(null)
+      showError(err.response?.data?.error || 'Gagal memuat permission role.')
+    } finally {
+      setLoadingPerm(false)
+    }
   }
-}
 
   const handleTogglePerm = (pid: string) => {
     setRolePermissionIDs((prev) =>
@@ -215,8 +243,10 @@ export default function SuperAdminRoles() {
         { permission_ids: rolePermissionIDs },
         { headers: { Authorization: `Bearer ${token}` } }
       )
+      setInitialPermIDs(rolePermissionIDs)
       showSuccess('Permission berhasil disimpan.')
       setIsPermModalOpen(false)
+      setSelectedRoleForPerm(null)
     } catch (err: any) {
       setPermError(err.response?.data?.error || 'Gagal menyimpan permission')
     } finally {
@@ -224,12 +254,28 @@ export default function SuperAdminRoles() {
     }
   }
 
-  // Group permission by module untuk tampilan UI
-  const groupedPermissions = permissions.reduce((acc, p) => {
-    if (!acc[p.module]) acc[p.module] = []
-    acc[p.module].push(p)
-    return acc
-  }, {} as Record<string, Permission[]>)
+  const isPermDirty = useMemo(() => {
+    if (rolePermissionIDs.length !== initialPermIDs.length) return true
+    const set = new Set(initialPermIDs)
+    return rolePermissionIDs.some((id) => !set.has(id))
+  }, [rolePermissionIDs, initialPermIDs])
+
+  const closePermModal = useCallback(() => {
+    if (savingPerm || loadingPerm) return
+    if (isPermDirty && !window.confirm('Perubahan permission belum disimpan. Yakin tutup?')) return
+    setIsPermModalOpen(false)
+    setSelectedRoleForPerm(null)
+  }, [savingPerm, loadingPerm, isPermDirty])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      if (isPermModalOpen) closePermModal()
+      else if (isModalOpen && !submitting) setIsModalOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [isPermModalOpen, isModalOpen, submitting, closePermModal])
 
   const activeCount = roles.filter((r) => r.is_active).length
 
@@ -355,7 +401,7 @@ export default function SuperAdminRoles() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
-                         <button
+                        <button
                           onClick={() => handleOpenPermModal(r)}
                           className="p-2 text-purple-500 hover:bg-purple-50 rounded-lg transition"
                           title="Atur Hak Akses"
@@ -397,7 +443,7 @@ export default function SuperAdminRoles() {
         </div>
       </div>
 
-      {/* MODAL */}
+      {/* MODAL EDIT / TAMBAH */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
@@ -406,7 +452,11 @@ export default function SuperAdminRoles() {
                 {editingRole ? <Pencil size={16} className="text-blue-500" /> : <Plus size={16} className="text-tp-green" />}
                 {editingRole ? 'Edit Peran' : 'Tambah Peran Baru'}
               </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-tp-muted hover:text-tp-text">
+              <button
+                onClick={() => !submitting && setIsModalOpen(false)}
+                className="text-tp-muted hover:text-tp-text disabled:opacity-50"
+                disabled={submitting}
+              >
                 <X size={18} />
               </button>
             </div>
@@ -508,6 +558,7 @@ export default function SuperAdminRoles() {
                   type="button"
                   variant="outline"
                   onClick={() => setIsModalOpen(false)}
+                  disabled={submitting}
                   className="rounded-xl bg-white"
                 >
                   Batal
@@ -529,8 +580,11 @@ export default function SuperAdminRoles() {
       {/* MODAL ATUR PERMISSION */}
       {isPermModalOpen && selectedRoleForPerm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !savingPerm && setIsPermModalOpen(false)} />
-          
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={closePermModal}
+          />
+
           <div className="relative w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-2xl">
             <div className="flex items-center justify-between p-6 border-b border-tp-border">
               <div>
@@ -540,7 +594,11 @@ export default function SuperAdminRoles() {
                 </h3>
                 <p className="text-xs text-tp-muted">Centang menu/aksi yang diizinkan untuk peran ini.</p>
               </div>
-              <button onClick={() => setIsPermModalOpen(false)} className="text-tp-muted hover:text-tp-text">
+              <button
+                onClick={closePermModal}
+                className="text-tp-muted hover:text-tp-text disabled:opacity-50"
+                disabled={savingPerm || loadingPerm}
+              >
                 <X size={20} />
               </button>
             </div>
@@ -551,8 +609,13 @@ export default function SuperAdminRoles() {
               </div>
             )}
 
-            <div className="p-6 overflow-y-auto space-y-6">
-              {Object.keys(groupedPermissions).length === 0 ? (
+            <div className="p-6 overflow-y-auto space-y-6 min-h-[140px]">
+              {loadingPerm ? (
+                <div className="flex items-center justify-center gap-2 text-sm text-tp-muted py-8">
+                  <Loader2 size={16} className="animate-spin" />
+                  Memuat permission...
+                </div>
+              ) : Object.keys(groupedPermissions).length === 0 ? (
                 <p className="text-center text-sm text-tp-muted">Belum ada data permission di database.</p>
               ) : (
                 Object.entries(groupedPermissions).map(([moduleName, perms]) => (
@@ -562,7 +625,10 @@ export default function SuperAdminRoles() {
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {perms.map((p) => (
-                        <label key={p.id} className="flex items-start gap-3 p-3 rounded-lg border border-tp-border hover:bg-tp-bg cursor-pointer transition">
+                        <label
+                          key={p.id}
+                          className="flex items-start gap-3 p-3 rounded-lg border border-tp-border hover:bg-tp-bg cursor-pointer transition"
+                        >
                           <input
                             type="checkbox"
                             checked={rolePermissionIDs.includes(p.id)}
@@ -582,10 +648,18 @@ export default function SuperAdminRoles() {
             </div>
 
             <div className="p-6 border-t border-tp-border flex justify-end gap-3 bg-gray-50 rounded-b-2xl">
-              <Button variant="outline" onClick={() => setIsPermModalOpen(false)} disabled={savingPerm}>
+              <Button
+                variant="outline"
+                onClick={closePermModal}
+                disabled={savingPerm || loadingPerm}
+              >
                 Batal
               </Button>
-              <Button onClick={handleSavePermissions} disabled={savingPerm} className="bg-tp-green text-white">
+              <Button
+                onClick={handleSavePermissions}
+                disabled={savingPerm || loadingPerm}
+                className="bg-tp-green text-white"
+              >
                 {savingPerm ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
                 Simpan Perubahan
               </Button>

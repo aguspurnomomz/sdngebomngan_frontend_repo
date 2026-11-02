@@ -890,7 +890,7 @@ const handleToggleSubject = (subjectID: string) => {
                 <div className="space-y-3">
                     <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
                     <p className="text-xs font-bold text-emerald-900 mb-2">
-                        ✅ Guru Berhasil Ditambahkan
+                        Guru Berhasil Ditambahkan
                     </p>
                     <p className="text-[11px] text-emerald-800 mb-3">
                         Salin data login berikut dan kirim ke guru via WhatsApp/SMS.
@@ -916,7 +916,7 @@ const handleToggleSubject = (subjectID: string) => {
                     }}
                     className="w-full rounded-xl bg-blue-500 px-4 py-2.5 text-xs font-semibold text-white hover:bg-blue-600"
                     >
-                    📋 Copy Email & Password
+                    salin email & kata sandi
                     </button>
 
                     <button
@@ -962,7 +962,7 @@ const handleToggleSubject = (subjectID: string) => {
                 {/* 3. Password + Generate */}
                 <div>
                     <label className="block text-xs font-semibold text-tp-muted mb-1">
-                    Password Awal *
+                    kata sandi awal *
                     </label>
                     <div className="flex gap-2">
                     <input
@@ -991,7 +991,7 @@ const handleToggleSubject = (subjectID: string) => {
                     </button>
                     </div>
                     <p className="text-[10px] text-tp-muted mt-1">
-                    Guru akan login dengan email + password ini.
+                    Guru akan login dengan email dan kata sandi awal ini.
                     </p>
                 </div>
 

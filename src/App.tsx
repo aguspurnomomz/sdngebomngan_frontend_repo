@@ -60,6 +60,7 @@ import { PermissionGuard } from './components/PermissionGuard'
 
 const ROLE_CACHE_KEY = 'tp_role_cache_v1'
 const ROLE_CACHE_TTL_MS = 5 * 60 * 1000
+const BOOT_FALLBACK_MS = 3000
 
 type CachedRole = {
   userId: string
@@ -103,8 +104,15 @@ function clearRoleCache() {
   }
 }
 
+function getErrorMessage(e: unknown): string {
+  if (axios.isAxiosError(e)) {
+    return (e.response?.data as any)?.error || e.message
+  }
+  if (e instanceof Error) return e.message
+  return String(e)
+}
+
 export default function App() {
-  console.log('[App] MOUNT / RENDER — waktu:', new Date().toISOString())
   const [session, setSession] = useState<any>(null)
   const [userRole, setUserRole] = useState<string | null>(null)
   const [checkingRole, setCheckingRole] = useState(false)
@@ -122,6 +130,10 @@ export default function App() {
   const [authError, setAuthError] = useState<string | null>(null)
   const API_URL = import.meta.env.VITE_API_URL
   const lastFetchedUserIdRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    console.log('[App] MOUNT — waktu:', new Date().toISOString())
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -234,9 +246,9 @@ export default function App() {
           cachedAt: Date.now(),
         })
         lastFetchedUserIdRef.current = userId
-      } catch (e: any) {
+      } catch (e: unknown) {
         console.error('Gagal memuat data sesi:', e)
-        if (!cancelled) setAuthError(e.response?.data?.error || e.message)
+        if (!cancelled) setAuthError(getErrorMessage(e))
         lastFetchedUserIdRef.current = null
         clearRoleCache()
       } finally {
@@ -263,7 +275,7 @@ export default function App() {
         markBootDone()
       })
 
-    const fallbackTimer = setTimeout(markBootDone, 3000)
+    const fallbackTimer = setTimeout(markBootDone, BOOT_FALLBACK_MS)
 
     const {
       data: { subscription },
@@ -340,6 +352,40 @@ export default function App() {
     setAdminName('')
   }
 
+  const renderAuthError = () => (
+    <div className="grid min-h-screen place-items-center text-center p-6">
+      <div>
+        <h2 className="text-lg font-bold text-tp-text mb-2">Gagal memuat akun</h2>
+        <p className="text-sm text-tp-muted mb-4">{authError}</p>
+        <button
+          onClick={() => supabase.auth.signOut()}
+          className="rounded-xl bg-tp-green px-4 py-2 text-xs font-semibold text-white"
+        >
+          Coba lagi
+        </button>
+      </div>
+    </div>
+  )
+
+  const renderVerifying = () => (
+    <div className="grid min-h-screen place-items-center font-sans text-tp-muted">
+      Memverifikasi akun...
+    </div>
+  )
+
+  // Menentukan redirect/komponen berdasarkan role.
+  // teacherElement = komponen yang dirender jika role adalah guru (bukan school_admin).
+  const renderRoleGate = (teacherElement: React.ReactNode) => {
+    if (userRole === 'school_admin') {
+      return schoolInactive ? (
+        <SchoolInactivePage />
+      ) : (
+        <Navigate to="/school-admin/dashboard" replace />
+      )
+    }
+    return teacherElement
+  }
+
   if (loading) {
     return (
       <div className="grid min-h-screen place-items-center font-sans text-tp-muted">
@@ -390,30 +436,11 @@ export default function App() {
           !session ? (
             <GuruLoginPage />
           ) : authError ? (
-            <div className="grid min-h-screen place-items-center text-center p-6">
-              <div>
-                <h2 className="text-lg font-bold text-tp-text mb-2">Gagal memuat akun</h2>
-                <p className="text-sm text-tp-muted mb-4">{authError}</p>
-                <button
-                  onClick={() => supabase.auth.signOut()}
-                  className="rounded-xl bg-tp-green px-4 py-2 text-xs font-semibold text-white"
-                >
-                  Coba lagi
-                </button>
-              </div>
-            </div>
+            renderAuthError()
           ) : checkingRole || userRole === null ? (
-            <div className="grid min-h-screen place-items-center font-sans text-tp-muted">
-              Memverifikasi akun...
-            </div>
-          ) : userRole === 'school_admin' ? (
-            schoolInactive ? (
-              <SchoolInactivePage />
-            ) : (
-              <Navigate to="/school-admin/dashboard" replace />
-            )
+            renderVerifying()
           ) : (
-            <Navigate to="/" replace />
+            renderRoleGate(<Navigate to="/" replace />)
           )
         }
       />
@@ -425,30 +452,11 @@ export default function App() {
           !session ? (
             <AdminSchoolLoginPage />
           ) : authError ? (
-            <div className="grid min-h-screen place-items-center text-center p-6">
-              <div>
-                <h2 className="text-lg font-bold text-tp-text mb-2">Gagal memuat akun</h2>
-                <p className="text-sm text-tp-muted mb-4">{authError}</p>
-                <button
-                  onClick={() => supabase.auth.signOut()}
-                  className="rounded-xl bg-tp-green px-4 py-2 text-xs font-semibold text-white"
-                >
-                  Coba lagi
-                </button>
-              </div>
-            </div>
+            renderAuthError()
           ) : checkingRole || userRole === null ? (
-            <div className="grid min-h-screen place-items-center font-sans text-tp-muted">
-              Memverifikasi akun...
-            </div>
-          ) : userRole === 'school_admin' ? (
-            schoolInactive ? (
-              <SchoolInactivePage />
-            ) : (
-              <Navigate to="/school-admin/dashboard" replace />
-            )
+            renderVerifying()
           ) : (
-            <Navigate to="/" replace />
+            renderRoleGate(<Navigate to="/" replace />)
           )
         }
       />
@@ -459,10 +467,11 @@ export default function App() {
         element={
           !session ? (
             <Navigate to="/" replace />
+          ) : authError ? (
+            // [FIX] sebelumnya stuck di "Memverifikasi akun..." saat authError
+            renderAuthError()
           ) : checkingRole || userRole === null ? (
-            <div className="grid min-h-screen place-items-center font-sans text-tp-muted">
-              Memverifikasi akun...
-            </div>
+            renderVerifying()
           ) : userRole === 'school_admin' && schoolInactive ? (
             <SchoolInactivePage />
           ) : userRole !== 'school_admin' ? (
@@ -518,36 +527,19 @@ export default function App() {
           !session ? (
             <Navigate to="/login/admin-sekolah" replace />
           ) : authError ? (
-            <div className="grid min-h-screen place-items-center text-center p-6">
-              <div>
-                <h2 className="text-lg font-bold text-tp-text mb-2">Gagal memuat akun</h2>
-                <p className="text-sm text-tp-muted mb-4">{authError}</p>
-                <button
-                  onClick={() => supabase.auth.signOut()}
-                  className="rounded-xl bg-tp-green px-4 py-2 text-xs font-semibold text-white"
-                >
-                  Coba lagi
-                </button>
-              </div>
-            </div>
+            renderAuthError()
           ) : checkingRole || userRole === null ? (
-            <div className="grid min-h-screen place-items-center font-sans text-tp-muted">
-              Memverifikasi akun...
-            </div>
-          ) : userRole === 'school_admin' ? (
-            schoolInactive ? (
-              <SchoolInactivePage />
-            ) : (
-              <Navigate to="/school-admin/dashboard" replace />
-            )
+            renderVerifying()
           ) : (
-            <AuthProvider>
-              <MainLayout
-                session={session}
-                teacherType={teacherType}
-                schoolMemberships={schoolMemberships}
-              />
-            </AuthProvider>
+            renderRoleGate(
+              <AuthProvider>
+                <MainLayout
+                  session={session}
+                  teacherType={teacherType}
+                  schoolMemberships={schoolMemberships}
+                />
+              </AuthProvider>
+            )
           )
         }
       >
