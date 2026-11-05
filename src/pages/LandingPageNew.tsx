@@ -25,6 +25,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+// import CrispChat from '../components/CrispChat'
 
 const LOGIN_PATH = "/pilih-portal"; 
 const BRAND_NAME = "SkoolaGo";
@@ -522,6 +523,7 @@ export default function LandingPage() {
           <FaqSection />
         </main>
         <Footer />
+        {/* <CrispChat />  */}
       </div>
     </div>
   );

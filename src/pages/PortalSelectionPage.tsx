@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, GraduationCap, Users, School, Building2, ArrowLeft } from "lucide-react";
 import logoBrand from "../assets/skoolago_typograph_brand.png";
+import CrispChat from '../components/CrispChat'
 
 export default function PortalSelectionPage() {
   const portals = [
@@ -151,6 +152,7 @@ export default function PortalSelectionPage() {
           Copyright © 2025 - 2026 SkoolaGo. All Rights Reserved.
         </p>
       </div>
+      <CrispChat />
     </div>
   );
 }
