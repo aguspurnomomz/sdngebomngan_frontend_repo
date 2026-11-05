@@ -102,6 +102,27 @@ export default function MainLayout({
           },
         ]
       : []),
+    ...(hasPermission('journal.read')
+    ? [
+        {
+          key: 'jurnal',
+          label: 'Jurnal Mengajar',
+          icon: <BookOpen size={18} />, 
+          children: [
+            {
+              path: '/journals',
+              label: 'Jadwal Jurnal',
+              icon: <CalendarClock size={14} />,
+            },
+            {
+              path: '/journals/history',
+              label: 'Riwayat Jurnal',
+              icon: <FileText size={14} />,
+            },
+          ],
+        },
+      ]
+    : []),
   ]
 
   const [expandedMenus, setExpandedMenus] = useState<string[]>([])
@@ -127,6 +148,8 @@ export default function MainLayout({
     if (p.startsWith('/students') || p.startsWith('/classes')) {
       toOpen.push('kelas')
     }
+
+    if (p.startsWith('/journals')) toOpen.push('jurnal')
 
     if (toOpen.length === 0) return
 

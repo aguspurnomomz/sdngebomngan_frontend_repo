@@ -5,6 +5,8 @@ import axios from 'axios'
 
 import GuruLoginPage from './pages/auth/GuruLoginPage'
 import AdminSchoolLoginPage from './pages/auth/AdminSchoolLoginPage'
+import LandingPage from './pages/LandingPage'
+import PortalSelectionPage from './pages/PortalSelectionPage'
 
 import RegisterPage from './pages/RegisterPage'
 import TermsPage from './pages/TermsPage'
@@ -41,7 +43,7 @@ import TimetableManagementPage from './pages/adminschool/TimetableManagementPage
 import TimetableEditorPage from './pages/adminschool/TimetableEditorPage'
 import TimeSlotManagementPage from './pages/adminschool/TimeSlotManagementPage'
 
-// [FIX] Import komponen ujian — dipakai bersama oleh admin sekolah & guru
+// Import komponen ujian dipakai bersama oleh admin sekolah & guru
 import ExamListPage from './pages/adminschool/exams/ExamListPage'
 import CreateExamPage from './pages/adminschool/exams/CreateExamPage'
 import EditExamPage from './pages/adminschool/exams/EditExamPage'
@@ -55,6 +57,13 @@ import ExamScheduleDetailPage from './pages/adminschool/exams/ExamScheduleDetail
 import ExamGradesPage from './pages/adminschool/exams/ExamGradesPage'
 import ExamSubmissionDetailPage from './pages/adminschool/exams/ExamSubmissionDetailPage'
 
+import TeachingJournalSchedulePage from './pages/userteacher/journals/TeachingJournalSchedulePage'
+import TeachingJournalHistoryPage from './pages/userteacher/journals/TeachingJournalHistoryPage'
+import TeachingJournalDetailPage from './pages/userteacher/journals/TeachingJournalDetailPage'
+import TeachingJournalFormPage from './pages/userteacher/journals/TeachingJournalFormPage' 
+
+import SchoolJournalMonitorPage from './pages/adminschool/journals/SchoolJournalMonitorPage'
+import SchoolJournalRecapPage from './pages/adminschool/journals/SchoolJournalRecapPage'
 import { AuthProvider } from './contexts/AuthContext'
 import { PermissionGuard } from './components/PermissionGuard'
 
@@ -461,6 +470,7 @@ export default function App() {
         }
       />
 
+<Route path="/pilih-portal" element={<PortalSelectionPage />} />
       {/* --- Route Admin Sekolah (Nested) --- */}
       <Route
         path="/school-admin/dashboard"
@@ -508,6 +518,11 @@ export default function App() {
         />
         <Route path="exam-schedules/:scheduleId/edit" element={<CreateExamSchedulePage />} />
         <Route path="exam-schedules/:scheduleId" element={<ExamScheduleDetailPage />} />
+
+        {/* === JURNAL MENGAJAR ROUTES (Admin Sekolah) === */}
+        <Route path="journals" element={<SchoolJournalMonitorPage />} />
+        <Route path="journals/rekap" element={<SchoolJournalRecapPage />} />
+
       </Route>
 
       {/* --- Route Register & Publik --- */}
@@ -520,8 +535,7 @@ export default function App() {
       <Route path="/school-exam" element={<TakeSchoolExamPage />} />
       <Route path="/personal-exam" element={<TakePersonalExamPage />} />
 
-      {/* --- Route User Guru --- */}
-      <Route
+      {/* <Route
         path="/"
         element={
           !session ? (
@@ -542,7 +556,75 @@ export default function App() {
             )
           )
         }
-      >
+      > */}
+
+        {/* TODO add landing page */}
+        <Route
+          path="/"
+          element={
+            !session ? (
+              <LandingPage />                          
+            ) : authError ? (
+              renderAuthError()
+            ) : checkingRole || userRole === null ? (
+              renderVerifying()
+            ) : (
+              renderRoleGate(
+                <AuthProvider>
+                  <MainLayout
+                    session={session}
+                    teacherType={teacherType}
+                    schoolMemberships={schoolMemberships}
+                  />
+                </AuthProvider>
+              )
+            )
+          }
+        >
+        {/* JURNAL MENGAJAR (GURU) */}
+        <Route
+          path="journals"
+          element={
+            <PermissionGuard permission="journal.read">
+              <TeachingJournalSchedulePage />
+            </PermissionGuard>
+          }
+        />
+        <Route
+          path="journals/history"
+          element={
+            <PermissionGuard permission="journal.read">
+              <TeachingJournalHistoryPage />
+            </PermissionGuard>
+          }
+        />
+        {/* TAMBAHKAN ROUTE NEW DI SINI */}
+        <Route
+          path="journals/new"
+          element={
+            <PermissionGuard permission="journal.create">
+              <TeachingJournalFormPage />
+            </PermissionGuard>
+          }
+        />
+        <Route
+          path="journals/:journalId"
+          element={
+            <PermissionGuard permission="journal.read">
+              <TeachingJournalDetailPage />
+            </PermissionGuard>
+          }
+        />
+        {/* TAMBAHKAN ROUTE EDIT DI SINI */}
+        <Route
+          path="journals/:journalId/edit"
+          element={
+            <PermissionGuard permission="journal.create">
+              <TeachingJournalFormPage />
+            </PermissionGuard>
+          }
+        />
+
         {/* Dashboard dan Profile selalu bisa diakses */}
         <Route index element={<DashboardOverview tokenBalance={tokenBalance} />} />
         <Route path="profile" element={<ProfilePage session={session} />} />

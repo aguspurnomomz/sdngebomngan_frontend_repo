@@ -20,7 +20,9 @@ import {
   ChevronRight,
   CalendarDays, 
   Clock,
-  BookOpen
+  BookOpen,
+  NotebookPen,
+  ClipboardList,
 } from 'lucide-react'
 
 type MenuItem = {
@@ -68,7 +70,7 @@ export default function SchoolAdminDashboard({ session }: { session: any }) {
   const displayName = email.split('@')[0] || 'Admin'
   //const initial = (email.charAt(0) || 'A').toUpperCase()
 
-  const menuItems: MenuItem[] = [
+    const menuItems: MenuItem[] = [
   {
     path: '/school-admin/dashboard',
     label: 'Beranda',
@@ -129,6 +131,23 @@ export default function SchoolAdminDashboard({ session }: { session: any }) {
     ],
   },
   {
+    path: 'journal-group',
+    label: 'Jurnal Mengajar',
+    icon: <NotebookPen size={18} />,
+    children: [
+      {
+        path: '/school-admin/dashboard/journals',
+        label: 'Monitor Jurnal',
+        icon: <ClipboardList size={14} />,
+      },
+      {
+        path: '/school-admin/dashboard/journals/rekap',
+        label: 'Rekap Jurnal',
+        icon: <FileText size={14} />,
+      },
+    ],
+  },
+  {
     path: 'exam-group',
     label: 'Kelola Ujian',
     icon: <FileText size={18} />,
@@ -147,14 +166,30 @@ export default function SchoolAdminDashboard({ session }: { session: any }) {
   },
 ]
 
-  const toggleMenu = (key: string) => {
+const toggleMenu = (key: string) => {
     setExpandedMenus((prev) =>
       prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
     )
-  }
+}
 
-  const isChildActive = (children: MenuItem[]) =>
-    children.some((c) => location.pathname.startsWith(c.path))
+const isPathActive = (childPath: string, siblings: MenuItem[]) => {
+    const p = location.pathname
+    // Kalau ada sibling yang lebih spesifik dan cocok, abaikan parent-nya
+    const moreSpecificMatch = siblings.some(
+      (s) =>
+        s.path !== childPath &&
+        s.path.startsWith(childPath + '/') &&
+        p.startsWith(s.path)
+    )
+    if (moreSpecificMatch) return false
+    return p === childPath || p.startsWith(childPath + '/')
+}
+
+const isChildActive = (children: MenuItem[]) =>
+  children.some((c) => isPathActive(c.path, children))
+
+  // const isChildActive = (children: MenuItem[]) =>
+  //   children.some((c) => location.pathname.startsWith(c.path))
 
   useEffect(() => {
     const checkSession = async () => {
@@ -164,10 +199,10 @@ export default function SchoolAdminDashboard({ session }: { session: any }) {
       }
     }
     checkSession()
-  }, [navigate])
+}, [navigate])
 
   // Auto-expand grup menu sesuai path aktif
-  useEffect(() => {
+useEffect(() => {
     const p = location.pathname
     const toOpen: string[] = []
 
@@ -192,6 +227,10 @@ export default function SchoolAdminDashboard({ session }: { session: any }) {
       toOpen.push('class-group')
     }
 
+  if (p.startsWith('/school-admin/dashboard/journals')) {
+      toOpen.push('journal-group')
+    }
+
     if (toOpen.length === 0) return
 
     setExpandedMenus((prev) => {
@@ -201,9 +240,9 @@ export default function SchoolAdminDashboard({ session }: { session: any }) {
       return Array.from(merged)
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname])
+}, [location.pathname])
 
-  const handleLogout = async () => {
+const handleLogout = async () => {
     try {
       setIsLoggingOut(true)
       await supabase.auth.signOut()
@@ -212,11 +251,11 @@ export default function SchoolAdminDashboard({ session }: { session: any }) {
       console.error('Gagal keluar:', error)
       setIsLoggingOut(false)
     }
-  }
+}
 
-  const closeSidebar = () => setSidebarOpen(false)
+const closeSidebar = () => setSidebarOpen(false)
 
-  return (
+return (
     <div className="flex min-h-screen bg-tp-bg">
       <CrispChat />
       <button
