@@ -4,17 +4,10 @@ import { AlertCircle, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import CrispChat from '../../components/CrispChat'
 
-import logoBrand from '../../assets/skoolago_typograph_brand.png'
+import logoBrand from '../../assets/logo_gembongan.png'
 import guruIllustration from '../../assets/computer-login-bro.png'
 
 const FORGOT_PASSWORD_PATH = '/forgot-password'
-
-type GuruTab = 'individual' | 'sekolah'
-
-const TABS: { id: GuruTab; label: string }[] = [
-  { id: 'individual', label: 'Guru Individual' },
-  { id: 'sekolah', label: 'Guru Sekolah' },
-]
 
 const INPUT_CLASS =
   'h-12 w-full rounded-xl border border-tp-border bg-white px-4 text-sm text-tp-text placeholder:text-tp-muted transition focus:border-tp-green focus:outline-none focus:ring-2 focus:ring-tp-green/20'
@@ -41,7 +34,6 @@ const GoogleIcon = () => (
 )
 
 export default function GuruLoginPage() {
-  const [activeTab, setActiveTab] = useState<GuruTab>('individual')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -55,7 +47,7 @@ export default function GuruLoginPage() {
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!agreed) return // safety guard, walau tombol sudah disabled
+    if (!agreed) return 
     setLoading(true)
     setLoginError(null)
 
@@ -65,7 +57,7 @@ export default function GuruLoginPage() {
       // Redirect ditangani oleh App.tsx via onAuthStateChange dan check-role
     } catch (err: any) {
       if (err.message === 'Invalid login credentials') {
-        setLoginError('Email atau password salah. Silakan coba lagi.')
+        setLoginError('Email atau kata sandi salah. Silakan coba lagi.')
       } else {
         setLoginError(err.message || 'Terjadi kesalahan')
       }
@@ -93,8 +85,6 @@ export default function GuruLoginPage() {
       setLoginError('Gagal login dengan Google: ' + error.message)
     }
   }
-
-  const emailPlaceholder = activeTab === 'individual' ? 'nama@gmail.com' : 'nama@sekolah.sch.id'
 
   return (
     <div className="flex min-h-screen items-start justify-center bg-tp-bg p-3 sm:items-center sm:p-6 bg-[radial-gradient(ellipse_at_0%_0%,rgba(125,211,167,0.25),transparent_50%),radial-gradient(ellipse_at_100%_100%,rgba(15,76,54,0.12),transparent_45%)]">
@@ -129,45 +119,9 @@ export default function GuruLoginPage() {
             className="mb-6 h-9 w-auto self-start object-contain md:hidden"
           />
 
-          <h1 className="text-3xl font-bold tracking-tight text-tp-text sm:text-4xl">Masuk</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-tp-text sm:text-4xl">Portal Guru</h1>
           <p className="mb-5 mt-2 text-xs text-tp-muted sm:text-sm">
-            Selamat datang di Portal Guru. Pilih jenis akun Anda untuk melanjutkan.
-          </p>
-
-          {/* Tab jenis akun */}
-          <div
-            role="tablist"
-            aria-label="Jenis akun guru"
-            className="mb-3 grid grid-cols-2 gap-1 rounded-xl bg-tp-green/10 p-1"
-          >
-            {TABS.map((tab) => {
-              const active = activeTab === tab.id
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={active}
-                  onClick={() => {
-                    setActiveTab(tab.id)
-                    clearError()
-                  }}
-                  className={`rounded-lg px-3 py-2 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-tp-green/40 sm:text-sm ${
-                    active
-                      ? 'bg-white text-tp-green shadow-sm'
-                      : 'text-tp-muted hover:text-tp-text'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              )
-            })}
-          </div>
-
-          <p role="tabpanel" className="mb-4 text-[11px] leading-relaxed text-tp-muted sm:text-xs">
-            {activeTab === 'individual'
-              ? 'Untuk guru yang mengajar mandiri. Gunakan email pribadi atau akun Google.'
-              : 'Untuk guru yang terdaftar di sekolah. Gunakan email yang didaftarkan admin sekolah.'}
+            Selamat datang di Portal Guru. Silakan masuk untuk melanjutkan.
           </p>
 
           {/* ====== TAMPILAN ERROR LOGIN ====== */}
@@ -198,14 +152,14 @@ export default function GuruLoginPage() {
                   setEmail(e.target.value)
                   clearError()
                 }}
-                placeholder={emailPlaceholder}
+                placeholder="nama@gmail.com"
                 className={INPUT_CLASS}
               />
             </div>
 
             <div>
               <label htmlFor="guru-password" className="sr-only">
-                Password
+                kata sandi
               </label>
               <div className="relative">
                 <input
@@ -218,7 +172,7 @@ export default function GuruLoginPage() {
                     setPassword(e.target.value)
                     clearError()
                   }}
-                  placeholder="Password"
+                  placeholder="Kata sandi"
                   className={`${INPUT_CLASS} pr-12`}
                 />
                 <button
@@ -241,7 +195,7 @@ export default function GuruLoginPage() {
                   to={FORGOT_PASSWORD_PATH}
                   className="text-xs font-medium text-tp-green hover:underline"
                 >
-                  Lupa password?
+                  Lupa kata sandi?
                 </Link>
               </div>
             </div>
@@ -322,30 +276,13 @@ export default function GuruLoginPage() {
             Masuk dengan Google
           </button>
 
-          {/* Link daftar / info — sesuai tab */}
-          {/* {activeTab === 'individual' && (
-            <p className="mt-5 text-center text-xs text-tp-muted sm:text-[13px]">
-              Belum punya akun?{' '}
-              <Link to="/register" className="font-semibold text-tp-green hover:underline">
-                Daftar di sini
-              </Link>
-            </p>
-          )} */}
-
-          {activeTab === 'sekolah' && (
-            <p className="mt-5 text-center text-xs text-tp-muted sm:text-[13px]">
-              Belum terdaftar di sekolah?{' '}
-              <span className="font-medium text-tp-text">Hubungi admin sekolah Anda.</span>
-            </p>
-          )}
-
           {/* Link ke admin sekolah */}
           <div className="mt-4 border-t border-tp-border pt-4 text-center">
             <Link
-              to="/login/admin-sekolah"
+              to="/pilih-portal"
               className="text-xs text-tp-muted transition-colors hover:text-tp-green"
             >
-              Login sebagai Admin Sekolah →
+               ← Kembali
             </Link>
           </div>
         </div>

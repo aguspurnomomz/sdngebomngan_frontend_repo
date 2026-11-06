@@ -3,7 +3,7 @@ import axios from 'axios'
 import { AlertCircle, CheckCircle2, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 
-import logoBrand from '../assets/skoolago_typograph_brand.png'
+import logoBrand from '../assets/logo_gembongan.png'
 import updateIllustration from '../assets/rest-password-bro.png'
 
 const AFTER_UPDATE_PATH = '/'

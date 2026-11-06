@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabaseClient'
 import CrispChat from '../../components/CrispChat'
 
 // Aset: sesuaikan path/nama file bila perlu
-import logoBrand from '../../assets/skoolago_typograph_brand.png'
+import logoBrand from '../../assets/logo_gembongan.png'
 import adminIllustration from '../../assets/computer-login-bro.png'
 
 // TODO: sesuaikan dengan route "lupa password" yang dipakai di aplikasi Anda
@@ -34,7 +34,7 @@ export default function AdminSchoolLoginPage() {
       // Redirect ditangani oleh App.tsx via onAuthStateChange + check-role
     } catch (err: any) {
       if (err.message === 'Invalid login credentials') {
-        setLoginError('Email atau password salah. Silakan coba lagi.')
+        setLoginError('Email atau kata sandi salah. Silakan coba lagi.')
       } else {
         setLoginError(err.message || 'Terjadi kesalahan')
       }
@@ -134,7 +134,7 @@ export default function AdminSchoolLoginPage() {
                     setPassword(e.target.value)
                     if (loginError) setLoginError(null)
                   }}
-                  placeholder="Password"
+                  placeholder="Kata sandi"
                   className={`${INPUT_CLASS} pr-12`}
                 />
                 <button
@@ -157,7 +157,7 @@ export default function AdminSchoolLoginPage() {
                   to={FORGOT_PASSWORD_PATH}
                   className="text-xs font-medium text-tp-green hover:underline"
                 >
-                  Lupa password?
+                  Lupa kata sandi?
                 </Link>
               </div>
             </div>
@@ -221,10 +221,10 @@ export default function AdminSchoolLoginPage() {
 
           <div className="mt-4 text-center">
             <Link
-              to="/login/guru"
+              to="/pilih-portal"
               className="text-xs text-tp-muted transition-colors hover:text-tp-green"
             >
-              ← Kembali ke Portal Guru
+              ← Kembali
             </Link>
           </div>
         </div>

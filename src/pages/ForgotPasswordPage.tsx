@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { AlertCircle, ArrowLeft, CheckCircle2, Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 
-import logoBrand from '../assets/skoolago_typograph_brand.png'
+import logoBrand from '../assets/logo_gembongan.png'
 import forgotIllustration from '../assets/binary-code-bro.png'
 
 const BACK_PATH = '/pilih-portal'
@@ -120,7 +120,7 @@ export default function ForgotPasswordPage() {
                 Lupa kata sandi?
               </h1>
               <p className="mb-6 mt-2 text-xs leading-relaxed text-tp-muted sm:text-sm">
-                Masukkan email akun Anda untuk menerima tautan pemulihan kata sandi.
+                Masukkan email yang terhubung dengan akun Anda untuk menerima tautan pemulihan kata sandi.
               </p>
 
               {error && (
@@ -153,6 +153,9 @@ export default function ForgotPasswordPage() {
                     className={INPUT_CLASS}
                   />
                 </div>
+                 <p className="mb-6 mt-2 text-xs leading-relaxed text-tp-muted sm:text-sm">
+                  Anda akan menerima link tautan untuk membuat kata sandi baru.
+                </p>
 
                 <button
                   type="submit"
