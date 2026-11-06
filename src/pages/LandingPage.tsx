@@ -1,13 +1,9 @@
 import { useEffect, useState } from "react";
 import AOS from "aos";
 import "aos/dist/aos.css";
-import type { 
-  // ChangeEvent, 
-  ComponentType, 
-  // FormEvent, 
-  // ReactNode 
-} from "react";
+import type { ComponentType } from "react";
 import { Link } from "react-router-dom";
+import CrispChat from '../components/CrispChat'
 import heroBg from "../assets/hero/Teaching-bro-green.png";
 import heroBgDark from "../assets/hero/Teaching-bro-yellow.png";
 import logoBrand from "../assets/skoolago_typograph_brand.png";
@@ -25,25 +21,20 @@ import {
   CheckCircle,
   ChevronDown,
   ClipboardCheck,
-  //GraduationCap,
   LifeBuoy,
   Mail,
   Menu,
   MessagesSquare,
   Moon,
   Phone,
-  //Quote,
   Rocket,
   FileText,
   ShieldCheck,
   Layers,
-  //Sparkles,
   Sun,
   Users,
   X,
 } from "lucide-react";
-
-
 
 /**
  * Warna aksen: `emerald` bawaan Tailwind.
@@ -90,16 +81,6 @@ interface NavItem {
   href: string;
 }
 
-// interface Partner {
-//   name: string;
-//   logo?: string;
-// }
-
-// interface Stat {
-//   value: string;
-//   description: string;
-//   caption: string;
-// }
 
 interface Feature {
   icon: IconType;
@@ -109,11 +90,6 @@ interface Feature {
   badge?: string;
 }
 
-// interface Testimonial {
-//   name: string;
-//   role: string;
-//   quote: string;
-// }
 
 interface Reason {
   title: string;
@@ -135,9 +111,7 @@ interface Faq {
 const NAV_ITEMS: NavItem[] = [
   { label: "Tentang Kami", href: "#tentang-kami" }, 
   { label: "Fitur", href: "#fitur" },
-  // { label: "Testimoni", href: "#testimoni" },
   { label: "FAQ", href: "#faq" },
-  // { label: "Harga", href: "#harga" },
 ];
 
 const HERO_POINTS = [
@@ -146,38 +120,6 @@ const HERO_POINTS = [
   "Akses ujian praktis bagi siswa tanpa perlu membuat akun",
 ];
 
-// const PARTNERS: Partner[] = [
-//   { name: "SMPN 3 Bandung" },
-//   { name: "SMA Harapan Bangsa" },
-//   { name: "SD Al-Azhar" },
-//   { name: "SMK Nusantara" },
-//   { name: "SMP Tunas Bangsa" },
-//   { name: "SDN 12 Cimahi" },
-//   { name: "MTs Darul Ilmi" },
-//   { name: "SMA Pelita" },
-// ];
-
-// TODO: ganti placeholder text nya
-// const STATS: Stat[] = [
-//   {
-//     value: "10.000+",
-//     description:
-//       "Guru menggunakan platform ini untuk melihat jadwal mengajar, membuat jurnal mengajar, membuat soal dan jadwal ujian",
-//     caption: "Guru aktif",
-//   },
-//   {
-//     value: "500+",
-//     description:
-//       "Sekolah sudah menjalankan administrasi kelas secara digital.",
-//     caption: "Sekolah bergabung",
-//   },
-//   {
-//     value: "98%",
-//     description:
-//       "Pengguna menyatakan puas karena waktu administrasi berkurang dan data lebih rapi.",
-//     caption: "Tingkat kepuasan pengguna",
-//   },
-// ];
 
 const FEATURES: Feature[] = [
   {
@@ -237,44 +179,6 @@ const UPCOMING_FEATURES: Feature[] = [
   },
 ];
 
-// const TESTIMONIALS: Testimonial[] = [
-//   {
-//     name: "Dra. Ratna Wulandari, M.Pd.",
-//     role: "Kepala Sekolah, SMP Negeri 3 Bandung",
-//     quote:
-//       "Laporan perkembangan siswa yang dulu butuh seminggu sekarang siap dalam sehari. Rapat evaluasi jadi jauh lebih terarah.",
-//   },
-//   {
-//     name: "Budi Santoso, S.Pd.",
-//     role: "Guru Matematika, SMA Harapan Bangsa",
-//     quote:
-//       "Analisis AI menunjukkan materi mana yang belum dikuasai kelas saya. Saya langsung tahu bagian apa yang perlu diulang, jadi sesi remedial tidak lagi menebak-nebak.",
-//   },
-//   {
-//     name: "Siti Nurhaliza, S.Pd.",
-//     role: "Guru Kelas 4, SD Islam Al-Azhar",
-//     quote:
-//       "Presensi dan nilai sekarang tidak perlu ditulis dua kali. Waktu saya kembali untuk menyiapkan pelajaran.",
-//   },
-//   {
-//     name: "Rina Marlina, S.Pd.",
-//     role: "Wali Kelas, SMP Tunas Bangsa",
-//     quote:
-//       "Orang tua murid langsung menerima rekap kehadiran. Pertanyaan ke saya lewat WhatsApp berkurang banyak.",
-//   },
-//   {
-//     name: "Agus Prasetyo, M.Pd.",
-//     role: "Wakil Kepala Sekolah Bidang Kurikulum, SMK Nusantara",
-//     quote:
-//       "Kami bisa membandingkan capaian antarkelas dan antarmata pelajaran tanpa menunggu rekap manual dari tiap guru. Keputusan kurikulum jadi berbasis data, bukan perkiraan.",
-//   },
-//   {
-//     name: "Dewi Kartika",
-//     role: "Staf Tata Usaha, SDN 12 Cimahi",
-//     quote:
-//       "Tim pendamping membantu memindahkan data siswa dari Excel dalam dua hari. Sejak itu kami tidak lagi memegang file terpisah per kelas.",
-//   },
-// ];
 
 const REASONS: Reason[] = [
   {
@@ -347,13 +251,6 @@ const FAQS: Faq[] = [
   },
 ];
 
-// const SOURCE_OPTIONS = [
-//   "Instagram",
-//   "LinkedIn",
-//   "Pencarian Google",
-//   "Rekomendasi rekan atau sekolah lain",
-//   "Lainnya",
-// ];
 
 const SectionHeading = ({
   title,
@@ -412,41 +309,6 @@ const Asset = ({
     </div>
   );
 };
-
-//TODO Default on placeholder
-// const Logo = ({ light = false }: { light?: boolean }) => (
-//   <Link to="/" className="flex items-center gap-2" aria-label={`${BRAND_NAME} beranda`}>
-//     <span
-//       className={`flex h-9 w-9 items-center justify-center rounded-full ${
-//         light ? "bg-white text-emerald-700" : "bg-emerald-600 text-white"
-//       }`}
-//     >
-//       <GraduationCap className="h-5 w-5" aria-hidden="true" />
-//     </span>
-//     <span
-//       className={`text-lg font-bold tracking-tight ${light ? "text-white" : "text-gray-900"}`}
-//     >
-//       {BRAND_NAME}
-//     </span>
-//   </Link>
-// );
-
-// const Logo = ({ light = false }: { light?: boolean }) => (
-//   <Link to="/" className="flex items-center gap-2" aria-label={`${BRAND_NAME} beranda`}>
-//     {/* Mengganti ikon bulat dengan logoBrand dari ASSETS */}
-//     <img 
-//       src={ASSETS.logo} 
-//       alt={`Logo ${BRAND_NAME}`} 
-//       className="h-10 w-10 object-contain" 
-//     />
-    
-//     <span
-//       className={`text-lg font-bold tracking-tight ${light ? "text-white" : "text-gray-900"}`}
-//     >
-//       {BRAND_NAME}
-//     </span>
-//   </Link>
-// );
 
 
 //Non text
@@ -661,41 +523,6 @@ const Hero = () => (
   </section>
 );
 
-/* Logo */
-// const initials = (name: string) =>
-//   name
-//     .split(" ")
-//     .filter(Boolean)
-//     .slice(0, 2)
-//     .map((w) => w[0])
-//     .join("")
-//     .toUpperCase();
-
-// const PartnerStrip = () => (
-//   <section className="bg-white py-10 dark:bg-gray-950" aria-label="Institusi yang bergabung">
-//     <div className="mx-auto max-w-6xl px-4 sm:px-6">
-//       <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-//         Bergabunglah dengan institusi pendidikan yang sudah memakai {BRAND_NAME}.
-//       </p>
-//       <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-8 gap-y-5">
-//         {PARTNERS.map((p) => (
-//           <li key={p.name} className="flex h-16 w-16 items-center justify-center">
-//             {p.logo ? (
-//               <img src={p.logo} alt={p.name} loading="lazy" className="max-h-16 object-contain" />
-//             ) : (
-//               <span
-//                 className="flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 text-sm font-bold text-gray-400 dark:bg-gray-800 dark:text-gray-400"
-//                 title={p.name}
-//               >
-//                 {initials(p.name)}
-//               </span>
-//             )}
-//           </li>
-//         ))}
-//       </ul>
-//     </div>
-//   </section>
-// );
 
 /* Tentang Kami */
 const AboutUs = () => (
@@ -758,33 +585,6 @@ const AboutUs = () => (
   </section>
 );
 
-/* Statistik */
-// const Stats = () => (
-//   <section className="bg-white pb-16 pt-6 dark:bg-gray-950 sm:pb-24" aria-labelledby="stats-title">
-//     <div className="mx-auto max-w-6xl px-4 sm:px-6">
-//       <div id="stats-title">
-//         <SectionHeading
-//           title={`${BRAND_NAME} dalam Angka`}
-//           subtitle="Gambaran singkat bagaimana guru dan sekolah memakai platform ini."
-//         />
-//       </div>
-
-//       <div className="mt-10 grid gap-5 md:grid-cols-3">
-//         {STATS.map((s) => (
-//           <div
-//             key={s.caption}
-//             className="flex flex-col rounded-2xl border-2 border-emerald-200 bg-white p-6 dark:border-emerald-800 dark:bg-gray-900"
-//           >
-//             <p className="text-4xl font-extrabold text-emerald-600 dark:text-emerald-400">{s.value}</p>
-//             <p className="mt-3 flex-1 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{s.description}</p>
-//             <p className="mt-5 text-xs text-gray-400 dark:text-gray-500">{s.caption}</p>
-//           </div>
-//         ))}
-//       </div>
-//     </div>
-//   </section>
-// );
-
 /* Fitur */
 const Features = () => (
   <section id="fitur" className="scroll-mt-20 bg-emerald-50/70 dark:bg-gray-900 py-16 sm:py-24">
@@ -842,36 +642,6 @@ const Features = () => (
     </div>
   </section>
 );
-
-/* Testimoni */
-// const Testimonials = () => (
-//   <section id="testimoni" className="scroll-mt-20 bg-white py-16 dark:bg-gray-950 sm:py-24">
-//     <div className="mx-auto max-w-6xl px-4 sm:px-6">
-//       <SectionHeading
-//         title="Dipercaya oleh Institusi Pendidikan di Indonesia"
-//         subtitle="Cerita dari guru dan pimpinan sekolah yang memakai platform ini setiap hari."
-//       />
-
-//       <div className="mt-12 columns-1 gap-5 md:columns-2 lg:columns-3">
-//         {TESTIMONIALS.map((t) => (
-//           <figure
-//             key={t.name}
-//             className="mb-5 break-inside-avoid rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900"
-//           >
-//             <Quote className="h-5 w-5 text-emerald-500" aria-hidden="true" />
-//             <blockquote className="mt-3 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-//               {t.quote}
-//             </blockquote>
-//             <figcaption className="mt-5">
-//               <p className="text-sm font-bold text-gray-900 dark:text-white">{t.name}</p>
-//               <p className="text-xs text-gray-500 dark:text-gray-400">{t.role}</p>
-//             </figcaption>
-//           </figure>
-//         ))}
-//       </div>
-//     </div>
-//   </section>
-// );
 
 /* Mengapa memilih kami */
 const WhyUs = () => {
@@ -979,195 +749,6 @@ const FaqSection = () => {
   );
 };
 
-/* Formulir kontak */
-// interface FormValues {
-//   name: string;
-//   email: string;
-//   whatsapp: string;
-//   school: string;
-//   position: string;
-//   source: string;
-// }
-
-// const INITIAL_FORM: FormValues = {
-//   name: "",
-//   email: "",
-//   whatsapp: "",
-//   school: "",
-//   position: "",
-//   source: "",
-// };
-
-// const INPUT_CLASS =
-//   "mt-2 block w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500 transition focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/30";
-
-// const Field = ({
-//   id,
-//   label,
-//   hint,
-//   children,
-// }: {
-//   id: string;
-//   label: string;
-//   hint?: string;
-//   children: ReactNode;
-// }) => (
-//   <div>
-//     <label htmlFor={id} className="block text-sm font-semibold text-gray-800 dark:text-gray-200">
-//       {label}
-//     </label>
-//     {children}
-//     {hint && <p className="mt-1.5 text-xs text-gray-400">{hint}</p>}
-//   </div>
-// );
-
-// const ContactForm = () => {
-//   const [values, setValues] = useState<FormValues>(INITIAL_FORM);
-//   const [submitted, setSubmitted] = useState(false);
-
-//   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-//     const { name, value } = e.target;
-//     setValues((prev) => ({ ...prev, [name]: value }));
-//   };
-
-//   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-//     e.preventDefault();
-//     // TODO: kirim `values` ke API Anda di sini
-//     console.log("Form kontak:", values);
-//     setSubmitted(true);
-//     setValues(INITIAL_FORM);
-//   };
-
-//   // return (
-//   //   <section id="harga" className="scroll-mt-20 bg-emerald-50/70 dark:bg-gray-900 py-16 sm:py-24">
-//   //     <div className="mx-auto max-w-xl px-4 sm:px-6">
-//   //       <SectionHeading
-//   //         title="Tetap Terhubung Dengan Kami"
-//   //         subtitle="Hubungi kami apabila ada pertanyaan atau konsultasi seputar kebutuhan sekolah anda, silahkan hubungi tim terkait"
-//   //       />
-
-//   //       {submitted ? (
-//   //         <div
-//   //           role="status"
-//   //           className="mt-10 rounded-2xl border border-emerald-200 bg-white p-8 text-center dark:border-emerald-800 dark:bg-gray-800"
-//   //         >
-//   //           <CheckCircle className="mx-auto h-10 w-10 text-emerald-600" aria-hidden="true" />
-//   //           <p className="mt-3 text-lg font-bold text-gray-900 dark:text-white">Terima kasih, data Anda sudah terkirim</p>
-//   //           <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">Tim kami akan menghubungi Anda secepatnya.</p>
-//   //           <button
-//   //             type="button"
-//   //             onClick={() => setSubmitted(false)}
-//   //             className="mt-5 text-sm font-semibold text-emerald-700 underline dark:text-emerald-400 underline-offset-2"
-//   //           >
-//   //             Kirim data lain
-//   //           </button>
-//   //         </div>
-//   //       ) : (
-//   //         <form onSubmit={handleSubmit} className="mt-10 space-y-5">
-//   //           <Field id="name" label="Nama Lengkap">
-//   //             <input
-//   //               id="name"
-//   //               name="name"
-//   //               type="text"
-//   //               required
-//   //               autoComplete="name"
-//   //               value={values.name}
-//   //               onChange={handleChange}
-//   //               className={INPUT_CLASS}
-//   //             />
-//   //           </Field>
-
-//   //           <Field id="email" label="Email" hint="Kami hanya memakai email ini untuk menghubungi Anda.">
-//   //             <input
-//   //               id="email"
-//   //               name="email"
-//   //               type="email"
-//   //               required
-//   //               autoComplete="email"
-//   //               value={values.email}
-//   //               onChange={handleChange}
-//   //               className={INPUT_CLASS}
-//   //             />
-//   //           </Field>
-
-//   //           <Field id="whatsapp" label="No. WhatsApp">
-//   //             <input
-//   //               id="whatsapp"
-//   //               name="whatsapp"
-//   //               type="tel"
-//   //               required
-//   //               autoComplete="tel"
-//   //               placeholder="08xxxxxxxxxx"
-//   //               value={values.whatsapp}
-//   //               onChange={handleChange}
-//   //               className={INPUT_CLASS}
-//   //             />
-//   //           </Field>
-
-//   //           <Field id="school" label="Nama Sekolah">
-//   //             <input
-//   //               id="school"
-//   //               name="school"
-//   //               type="text"
-//   //               required
-//   //               autoComplete="organization"
-//   //               value={values.school}
-//   //               onChange={handleChange}
-//   //               className={INPUT_CLASS}
-//   //             />
-//   //           </Field>
-
-//   //           <Field id="position" label="Posisi dan Jabatan">
-//   //             <input
-//   //               id="position"
-//   //               name="position"
-//   //               type="text"
-//   //               required
-//   //               autoComplete="organization-title"
-//   //               value={values.position}
-//   //               onChange={handleChange}
-//   //               className={INPUT_CLASS}
-//   //             />
-//   //           </Field>
-
-//   //           <Field id="source" label={`Dari mana Anda mengetahui ${BRAND_NAME}?`}>
-//   //             <select
-//   //               id="source"
-//   //               name="source"
-//   //               required
-//   //               value={values.source}
-//   //               onChange={handleChange}
-//   //               className={INPUT_CLASS}
-//   //             >
-//   //               <option value="" disabled>
-//   //                 Pilih salah satu
-//   //               </option>
-//   //               {SOURCE_OPTIONS.map((o) => (
-//   //                 <option key={o} value={o}>
-//   //                   {o}
-//   //                 </option>
-//   //               ))}
-//   //             </select>
-//   //           </Field>
-
-//   //           <div className="flex flex-col items-center gap-3 pt-2">
-//   //             {/* <p className="text-center text-xs text-gray-500 dark:text-gray-400">
-//   //               Tim kami akan mengubungi anda.
-//   //             </p> */}
-//   //             <button
-//   //               type="submit"
-//   //               className="rounded-full bg-emerald-600 px-10 py-3 text-base font-semibold text-white transition hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950"
-//   //             >
-//   //               Kirim Pesan
-//   //             </button>
-//   //           </div>
-//   //         </form>
-//   //       )}
-//   //     </div>
-//   //   </section>
-//   // );
-// };
-
 /* Banner CTA penutup */
 const CTA = () => (
   <section className="relative overflow-hidden bg-emerald-600 dark:bg-emerald-800">
@@ -1263,7 +844,7 @@ const Footer = () => (
         <FooterColumn
         title="Perusahaan"
         links={[
-          { label: "Tentang Kami", href: "#tentang-kami" }, // <-- Tambahan
+          { label: "Tentang Kami", href: "#tentang-kami" }, 
           { label: "Testimoni", href: "#testimoni" },
           { label: "Minta Demo", href: "#harga" },
         ]}
@@ -1300,9 +881,9 @@ export default function LandingPage() {
 
   useEffect(() => {
     AOS.init({
-      duration: 800, // Durasi animasi (ms)
-      once: true,    // Animasi hanya berjalan sekali
-      offset: 50,    // Jarak trigger scroll
+      duration: 800, 
+      once: false,    
+      offset: 50,   
     });
   }, []);
 
@@ -1315,18 +896,15 @@ export default function LandingPage() {
         <Navbar theme={theme} onToggleTheme={toggleTheme} />
         <main>
           <Hero />
-          {/* <PartnerStrip /> */}
           <AboutUs /> 
-          {/* <Stats /> */}
           <Features />
-          {/* <Testimonials /> */}
           <WhyUs />
           <Approach />
           <FaqSection />
-          {/* <ContactForm /> */}
           <CTA />
         </main>
         <Footer />
+        <CrispChat />
       </div>
     </div>
   );

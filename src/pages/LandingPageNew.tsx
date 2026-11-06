@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
+// import CrispChat from '../components/CrispChat'
 import type { 
     ComponentType, 
-    //ReactNode 
 } from "react";
 import { Link } from "react-router-dom";
 import heroBg from "../assets/hero/studdent_study.png";
@@ -25,7 +25,6 @@ import {
   Users,
   X,
 } from "lucide-react";
-// import CrispChat from '../components/CrispChat'
 
 const LOGIN_PATH = "/pilih-portal"; 
 const BRAND_NAME = "SkoolaGo";
