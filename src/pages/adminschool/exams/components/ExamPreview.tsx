@@ -1,4 +1,6 @@
 import { Save, Rocket } from 'lucide-react'
+import katex from 'katex'
+import 'katex/dist/katex.min.css'
 
 type Props = {
   data: any
@@ -12,6 +14,70 @@ type Props = {
 const SUBJECT_LABELS: Record<string, string> = {
   regular: 'Ulangan Harian', quiz: 'Quiz', uts: 'UTS', uas: 'UAS',
   tryout: 'Try Out', remedial: 'Remedial',
+}
+
+// Helper 1: Render teks opsi jawaban yang mungkin mengandung $...$
+function renderMathText(text: string) {
+  if (!text) return null
+  const parts = text.split(/(\$[^$]+\$)/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('$') && part.endsWith('$') && part.length > 1) {
+      try {
+        const html = katex.renderToString(part.slice(1, -1), { throwOnError: false })
+        return <span key={i} dangerouslySetInnerHTML={{ __html: html }} />
+      } catch {
+        return <span key={i}>{part}</span>
+      }
+    }
+    return <span key={i}>{part}</span>
+  })
+}
+
+// Helper 2: Render HTML dari RichTextEditor dengan DOMParser (Jauh lebih aman!)
+function renderHtmlWithMath(html: string) {
+  if (!html) return null
+  
+  // Jika di lingkungan server-side (SSR) atau tidak ada DOMParser, fallback
+  if (typeof window === 'undefined') {
+    return <div dangerouslySetInnerHTML={{ __html: html }} />
+  }
+
+  // 1. Parsing string HTML menjadi DOM object
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(html, 'text/html')
+
+  // 2. Cari semua elemen yang merupakan inline-math
+  // Menggunakan querySelectorAll agar tidak peduli class atau atribut apa pun yang ditambahkan Tiptap
+  const mathNodes = doc.querySelectorAll('[data-type="inline-math"]')
+  
+  mathNodes.forEach((node) => {
+    // Ambil LaTeX dari atribut, atau jika tidak ada, coba dari dalam teks elemen
+    const latex = node.getAttribute('data-latex') || node.textContent || ''
+    
+    if (latex) {
+      try {
+        // Render LaTeX ke string HTML menggunakan KaTeX
+        const renderedMath = katex.renderToString(latex, { 
+          throwOnError: false, 
+          output: 'html' 
+        })
+        // Ganti elemen span tadi dengan HTML KaTeX yang baru
+        node.outerHTML = renderedMath
+      } catch (e) {
+        node.outerHTML = `<span class="text-rose-500">[Math Error]</span>`
+      }
+    }
+  })
+
+  // 3. Ubah kembali DOM yang sudah diedit menjadi string HTML utuh
+  const finalHtml = doc.body.innerHTML
+
+  return (
+    <div 
+      className="prose prose-sm max-w-none text-tp-text" 
+      dangerouslySetInnerHTML={{ __html: finalHtml }} 
+    />
+  )
 }
 
 export default function ExamPreview({ data, onBack, onSaveDraft, onPublish, submitting, readOnly = false, }: Props) {
@@ -64,7 +130,7 @@ export default function ExamPreview({ data, onBack, onSaveDraft, onPublish, subm
         <h3 className="mb-4 text-sm font-bold text-tp-text">Preview Soal</h3>
         <div className="space-y-4">
           {questions.map((q: any, i: number) => (
-            <div key={q.id} className="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
+            <div key={q.id || i} className="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
               <div className="mb-2 flex items-center gap-2">
                 <span className="text-xs font-bold text-tp-muted">#{i + 1}</span>
                 <span
@@ -78,26 +144,43 @@ export default function ExamPreview({ data, onBack, onSaveDraft, onPublish, subm
                 </span>
                 <span className="text-[11px] text-tp-muted">{q.score} poin</span>
               </div>
-              <p className="mb-2 text-sm text-tp-text">{q.question_text}</p>
+
+              {/* Pertanyaan */}
+              <div className="mb-3 text-sm text-tp-text">
+                {renderHtmlWithMath(q.question_text)}
+              </div>
+
+              {/* Pilihan Jawaban */}
               {q.type === 'multiple_choice' && q.options && (
-                <div className="grid grid-cols-2 gap-1.5 text-xs text-tp-muted">
+                <div className="grid grid-cols-2 gap-1.5 text-xs text-tp-muted mb-3">
                   {Object.entries(q.options).map(([k, v]) => (
                     <div
                       key={k}
-                      className={`rounded-md px-2 py-1 ${
+                      className={`rounded-md px-2 py-1.5 ${
                         q.correct_answer === k
                           ? 'bg-tp-green/10 font-semibold text-tp-green'
                           : 'bg-white'
                       }`}
                     >
-                      {k}. {v as string} {q.correct_answer === k && '✓'}
+                      <span className="font-bold">{k}.</span> {renderMathText(v as string)} {q.correct_answer === k && '✓'}
                     </div>
                   ))}
                 </div>
               )}
+
+              {/* Pembahasan */}
+              {q.explanation && (
+                <div className="mt-2 rounded-md bg-white p-3 text-[11px] text-tp-muted border border-slate-100">
+                  <span className="font-semibold block mb-1">Pembahasan:</span>
+                  <div>{renderHtmlWithMath(q.explanation)}</div>
+                </div>
+              )}
+
+              {/* Kunci Jawaban Essay */}
               {q.type === 'essay' && q.answer_key && (
-                <div className="rounded-md bg-white p-2 text-[11px] text-tp-muted">
-                  <span className="font-semibold">Kunci:</span> {q.answer_key}
+                <div className="mt-2 rounded-md bg-white p-3 text-[11px] text-tp-muted border border-slate-100">
+                  <span className="font-semibold block mb-1">Kunci Jawaban:</span>
+                  <div>{renderHtmlWithMath(q.answer_key)}</div>
                 </div>
               )}
             </div>

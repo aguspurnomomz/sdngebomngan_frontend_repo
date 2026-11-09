@@ -57,6 +57,10 @@ import ExamScheduleDetailPage from './pages/adminschool/exams/ExamScheduleDetail
 import ExamGradesPage from './pages/adminschool/exams/ExamGradesPage'
 import ExamSubmissionDetailPage from './pages/adminschool/exams/ExamSubmissionDetailPage'
 
+import ExamRoomManagementPage from './pages/adminschool/exams/ExamRoomManagementPage'
+import ExamRoomPlacementPage from './pages/adminschool/exams/ExamRoomPlacementPage'
+import ExamCardPage from './pages/adminschool/exams/ExamCardPage'
+
 import TeachingJournalSchedulePage from './pages/userteacher/journals/TeachingJournalSchedulePage'
 import TeachingJournalHistoryPage from './pages/userteacher/journals/TeachingJournalHistoryPage'
 import TeachingJournalDetailPage from './pages/userteacher/journals/TeachingJournalDetailPage'
@@ -512,6 +516,9 @@ export default function App() {
         <Route path="exam-schedules/create" element={<CreateExamSchedulePage />} />
         <Route path="exam-schedules/:scheduleId/monitor" element={<ExamMonitorPage />} />
         <Route path="exam-schedules/:scheduleId/grades" element={<ExamGradesPage />} />
+        <Route path="exam-rooms" element={<ExamRoomManagementPage />} />
+        <Route path="exam-schedules/:scheduleId/placement" element={<ExamRoomPlacementPage />} />
+        <Route path="exam-schedules/:scheduleId/cards" element={<ExamCardPage />} />
         <Route
           path="exam-schedules/:scheduleId/submissions/:submissionId"
           element={<ExamSubmissionDetailPage />}

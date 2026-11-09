@@ -6,7 +6,7 @@ import {
   Clock, MapPin, User as UserIcon,
   AlertCircle, Loader2, FileText, Award, Users, BookOpen,
   ChevronDown, ChevronUp, CheckCircle2, Circle, BarChart3,
-  Lock, Unlock, Eye, RefreshCw,
+  Lock, Unlock, Eye, RefreshCw, Printer, DoorOpen,
 } from 'lucide-react'
 import { supabase } from '../../../lib/supabaseClient'
 import ExamAccessPanel from './components/ExamAccessPanel'
@@ -276,6 +276,28 @@ export default function ExamScheduleDetailPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* ===== TAMBAHKAN DARI SINI ===== */}
+          <button
+            type="button"
+            onClick={() =>
+              navigate(`/school-admin/dashboard/exam-schedules/${schedule.id}/placement`)
+            }
+            className="inline-flex items-center gap-1.5 rounded-xl border border-tp-border bg-white px-3.5 py-2 text-xs font-semibold text-tp-text hover:bg-slate-50"
+          >
+            <DoorOpen size={13} /> Penempatan Ruangan
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              navigate(`/school-admin/dashboard/exam-schedules/${schedule.id}/cards`)
+            }
+            className="inline-flex items-center gap-1.5 rounded-xl border border-tp-border bg-white px-3.5 py-2 text-xs font-semibold text-tp-text hover:bg-slate-50"
+          >
+            <Printer size={13} /> Cetak Kartu
+          </button>
+          {/* ===== SAMPAI SINI ===== */}
+
           {(schedule.status === 'scheduled' || schedule.status === 'ongoing') && (
             <button
               type="button"

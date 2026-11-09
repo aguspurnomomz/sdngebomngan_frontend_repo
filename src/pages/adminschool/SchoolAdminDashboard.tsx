@@ -147,7 +147,7 @@ export default function SchoolAdminDashboard({ session }: { session: any }) {
       },
     ],
   },
-  {
+   {
     path: 'exam-group',
     label: 'Kelola Ujian',
     icon: <FileText size={18} />,
@@ -160,6 +160,11 @@ export default function SchoolAdminDashboard({ session }: { session: any }) {
       {
         path: '/school-admin/dashboard/exam-schedules',
         label: 'Jadwal Ujian',
+        icon: <CalendarClock size={14} />,
+      },
+      {
+        path: '/school-admin/dashboard/exam-rooms',
+        label: 'Ruangan Ujian',
         icon: <CalendarClock size={14} />,
       },
     ],

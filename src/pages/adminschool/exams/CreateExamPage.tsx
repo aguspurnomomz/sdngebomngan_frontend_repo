@@ -7,6 +7,7 @@ import ExamStepper from './components/ExamStepper'
 import ExamInfoForm from './components/ExamInfoForm'
 import ExamQuestionBuilder from './components/ExamQuestionBuilder'
 import ExamPreview from './components/ExamPreview'
+import ImportExamJSON from './components/ImportExamJSON'
 
 const DEFAULT_DATA = {
   title: '',
@@ -251,6 +252,31 @@ export default function CreateExamPage() {
     }
   }
 
+   // Handler untuk import JSON
+  const handleImportJSON = (importedQuestions: any[], importedScoringConfig?: any) => {
+    setData((prev: any) => {
+      // Gabungkan soal lama (jika ada) dengan soal baru dari import
+      const combinedQuestions = [...(prev.questions || []), ...importedQuestions]
+      
+      // Rapikan ulang urutan (order)
+      const reordered = combinedQuestions.map((q, idx) => ({
+        ...q,
+        order: idx + 1
+      }))
+
+      return {
+        ...prev,
+        questions: reordered,
+        // Jika file import punya scoring_config, timpa (opsional)
+        ...(importedScoringConfig ? { scoring_config: importedScoringConfig } : {})
+      }
+    })
+    
+    isDirtyRef.current = true
+    
+    // Opsional: Notifikasi berhasil (bisa pakai alert sementara)
+    // alert(`Berhasil mengimpor ${importedQuestions.length} soal!`)
+  }
 
   const goBack = useCallback(() => {
     if (isDirtyRef.current && !isDataEmpty(data)) {
@@ -393,12 +419,19 @@ export default function CreateExamPage() {
         <ExamInfoForm data={data} onChange={setData} onNext={() => setStep(2)} />
       )}
       {step === 2 && (
-        <ExamQuestionBuilder
-          data={data}
-          onChange={setData}
-          onBack={() => setStep(1)}
-          onNext={() => setStep(3)}
-        />
+        <div className="space-y-4">
+          {/* Import Bar - muncul di atas builder */}
+          <div className="flex justify-end">
+             <ImportExamJSON onImport={handleImportJSON} />
+          </div>
+
+          <ExamQuestionBuilder
+            data={data}
+            onChange={setData}
+            onBack={() => setStep(1)}
+            onNext={() => setStep(3)}
+          />
+        </div>
       )}
       {step === 3 && (
         <ExamPreview

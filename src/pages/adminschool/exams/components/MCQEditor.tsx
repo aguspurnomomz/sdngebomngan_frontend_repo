@@ -1,6 +1,6 @@
 import { Trash2, Plus } from 'lucide-react'
-import ImageUploader from './ImageUploader'
 import RichTextEditor from './RichTextEditor'
+import MathInput from './MathInput'
 
 type Props = {
   question: any
@@ -23,25 +23,13 @@ export default function MCQEditor({ question, onChange }: Props) {
 
   const addOption = () => {
     const keys = Object.keys(options)
-    const next = String.fromCharCode(65 + keys.length) // E, F, ...
+    const next = String.fromCharCode(65 + keys.length)
     onChange({ ...question, options: { ...options, [next]: '' } })
   }
 
   return (
     <div className="space-y-4">
       {/* Pertanyaan */}
-      {/* <div>
-        <label className="mb-1.5 block text-xs font-semibold text-tp-text">
-          Pertanyaan <span className="text-rose-500">*</span>
-        </label>
-        <textarea
-          rows={2}
-          value={question.question_text || ''}
-          onChange={(e) => setField('question_text', e.target.value)}
-          placeholder="Tulis pertanyaan..."
-          className="w-full resize-none rounded-xl border border-tp-border px-3.5 py-2.5 text-sm focus:border-tp-green focus:outline-none"
-        />
-      </div> */}
       <div>
         <label className="mb-1.5 block text-xs font-semibold text-tp-text">
           Pertanyaan <span className="text-rose-500">*</span>
@@ -49,18 +37,15 @@ export default function MCQEditor({ question, onChange }: Props) {
         <RichTextEditor
           value={question.question_text || ''}
           onChange={(html) => setField('question_text', html)}
-          placeholder="Tulis pertanyaan..."
+          placeholder="Tulis pertanyaan... (bisa sisipkan gambar langsung)"
         />
       </div>
 
-      <ImageUploader
-        value={question.image_url || ''}
-        onChange={(objectKey) => setField('image_url', objectKey)}
-      />
-
       {/* Opsi */}
       <div>
-        <label className="mb-2 block text-xs font-semibold text-tp-text">Pilihan Jawaban</label>
+        <label className="mb-2 block text-xs font-semibold text-tp-text">
+          Pilihan Jawaban
+        </label>
         <div className="space-y-2">
           {Object.entries(options).map(([key, val]) => (
             <div key={key} className="flex items-center gap-2">
@@ -72,18 +57,22 @@ export default function MCQEditor({ question, onChange }: Props) {
                 className="h-4 w-4 accent-tp-green"
                 title="Tandai sebagai kunci jawaban"
               />
-              <span className="w-6 shrink-0 text-xs font-bold text-tp-muted">{key}.</span>
-              <input
-                type="text"
+              <span className="w-6 shrink-0 text-xs font-bold text-tp-muted">
+                {key}.
+              </span>
+
+              {/* Menggunakan MathInput untuk opsi jawaban */}
+              <MathInput
                 value={val as string}
-                onChange={(e) => setOption(key, e.target.value)}
+                onChange={(v) => setOption(key, v)}
                 placeholder={`Opsi ${key}`}
-                className={`flex-1 rounded-lg border px-3 py-2 text-sm focus:outline-none ${
+                className={`flex-1 rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-tp-green/20 transition-colors ${
                   question.correct_answer === key
                     ? 'border-tp-green bg-tp-green/5 font-medium'
-                    : 'border-tp-border'
+                    : 'border-tp-border hover:border-tp-green/50'
                 }`}
               />
+
               {Object.keys(options).length > 2 && (
                 <button
                   type="button"
@@ -96,6 +85,7 @@ export default function MCQEditor({ question, onChange }: Props) {
             </div>
           ))}
         </div>
+
         {Object.keys(options).length < 6 && (
           <button
             type="button"
@@ -110,16 +100,22 @@ export default function MCQEditor({ question, onChange }: Props) {
       {/* Meta */}
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="mb-1 block text-[11px] font-semibold text-tp-muted">Skor</label>
+          <label className="mb-1 block text-[11px] font-semibold text-tp-muted">
+            Skor
+          </label>
           <input
             type="number"
             value={question.score ?? 1}
-            onChange={(e) => setField('score', parseFloat(e.target.value) || 0)}
+            onChange={(e) =>
+              setField('score', parseFloat(e.target.value) || 0)
+            }
             className="w-full rounded-lg border border-tp-border px-3 py-2 text-sm"
           />
         </div>
         <div>
-          <label className="mb-1 block text-[11px] font-semibold text-tp-muted">Level Kognitif</label>
+          <label className="mb-1 block text-[11px] font-semibold text-tp-muted">
+            Level Kognitif
+          </label>
           <select
             value={question.cognitive_level || ''}
             onChange={(e) => setField('cognitive_level', e.target.value)}
@@ -127,20 +123,23 @@ export default function MCQEditor({ question, onChange }: Props) {
           >
             <option value="">-- Pilih --</option>
             {['C1', 'C2', 'C3', 'C4', 'C5', 'C6'].map((l) => (
-              <option key={l} value={l}>{l}</option>
+              <option key={l} value={l}>
+                {l}
+              </option>
             ))}
           </select>
         </div>
       </div>
 
-      {/* Pembahasan */}
+      {/* Pembahasan — DIGANTI MENJADI RichTextEditor */}
       <div>
-        <label className="mb-1 block text-[11px] font-semibold text-tp-muted">Pembahasan (opsional)</label>
-        <textarea
-          rows={2}
+        <label className="mb-1.5 block text-xs font-semibold text-tp-text">
+          Pembahasan (opsional)
+        </label>
+        <RichTextEditor
           value={question.explanation || ''}
-          onChange={(e) => setField('explanation', e.target.value)}
-          className="w-full resize-none rounded-lg border border-tp-border px-3 py-2 text-sm"
+          onChange={(html) => setField('explanation', html)}
+          placeholder="Tulis pembahasan... (bisa sisipkan rumus & gambar)"
         />
       </div>
     </div>

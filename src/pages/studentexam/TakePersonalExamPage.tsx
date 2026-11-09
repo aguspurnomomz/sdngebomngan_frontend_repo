@@ -10,7 +10,56 @@ import type {
   PublicExamPreview, StartExamResponse, ExamQuestion,
 } from '@/features/personal-exam/types'
 
+import katex from 'katex'
+import 'katex/dist/katex.min.css'
+
 type Step = 'loading' | 'invalid' | 'preview' | 'exam' | 'submitted'
+
+// Helper 1: Render opsi jawaban yang mengandung format $...$
+function renderMathText(text: string) {
+  if (!text) return null
+  const parts = text.split(/(\$[^$]+\$)/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('$') && part.endsWith('$') && part.length > 1) {
+      try {
+        const html = katex.renderToString(part.slice(1, -1), { throwOnError: false })
+        return <span key={i} dangerouslySetInnerHTML={{ __html: html }} />
+      } catch {
+        return <span key={i}>{part}</span>
+      }
+    }
+    return <span key={i}>{part}</span>
+  })
+}
+// Helper 2: Render HTML dari RichTextEditor + format node inline-math
+function renderHtmlWithMath(html: string) {
+  if (!html) return null
+  if (typeof window === 'undefined') return <div dangerouslySetInnerHTML={{ __html: html }} />
+
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(html, 'text/html')
+  
+  // Cari node matematika dari Tiptap
+  const mathNodes = doc.querySelectorAll('[data-type="inline-math"]')
+  mathNodes.forEach((node) => {
+    const latex = node.getAttribute('data-latex') || node.textContent || ''
+    if (latex) {
+      try {
+        const renderedMath = katex.renderToString(latex, { throwOnError: false, output: 'html' })
+        node.outerHTML = renderedMath
+      } catch (e) {
+        node.outerHTML = `<span class="text-rose-500">[Math Error]</span>`
+      }
+    }
+  })
+
+  return (
+    <div 
+      className="prose prose-sm max-w-none text-tp-text" 
+      dangerouslySetInnerHTML={{ __html: doc.body.innerHTML }} 
+    />
+  )
+}
 
 export default function TakePersonalExamPage() {
   const [searchParams] = useSearchParams()
@@ -409,7 +458,7 @@ export default function TakePersonalExamPage() {
             </div>
 
             <p className="text-base font-semibold text-tp-text leading-relaxed whitespace-pre-wrap mb-5">
-              {currentQ.question_text}
+              {renderHtmlWithMath(currentQ.question_text)}
             </p>
 
             {/* Options / Essay */}
@@ -429,7 +478,7 @@ export default function TakePersonalExamPage() {
                           : 'border-tp-border bg-white text-tp-text hover:bg-slate-50'
                       }`}
                     >
-                      {opt}
+                      {renderMathText(opt)}
                     </button>
                   )
                 })}

@@ -1,5 +1,4 @@
 import { Trash2, Plus } from 'lucide-react'
-import ImageUploader from './ImageUploader'
 import RichTextEditor from './RichTextEditor'
 
 type Props = {
@@ -18,22 +17,12 @@ export default function EssayEditor({ question, onChange }: Props) {
   }
 
   const addRubric = () => setField('rubric', [...rubric, { criteria: '', score: 1 }])
-  const removeRubric = (idx: number) => setField('rubric', rubric.filter((_: any, i: number) => i !== idx))
+  const removeRubric = (idx: number) =>
+    setField('rubric', rubric.filter((_: any, i: number) => i !== idx))
 
   return (
     <div className="space-y-4">
-      {/* <div>
-        <label className="mb-1.5 block text-xs font-semibold text-tp-text">
-          Pertanyaan <span className="text-rose-500">*</span>
-        </label>
-        <textarea
-          rows={3}
-          value={question.question_text || ''}
-          onChange={(e) => setField('question_text', e.target.value)}
-          placeholder="Tulis pertanyaan essay..."
-          className="w-full resize-none rounded-xl border border-tp-border px-3.5 py-2.5 text-sm focus:border-tp-green focus:outline-none"
-        />
-      </div> */}
+      {/* Pertanyaan — sekarang support inline image sama seperti PG */}
       <div>
         <label className="mb-1.5 block text-xs font-semibold text-tp-text">
           Pertanyaan <span className="text-rose-500">*</span>
@@ -41,28 +30,13 @@ export default function EssayEditor({ question, onChange }: Props) {
         <RichTextEditor
           value={question.question_text || ''}
           onChange={(html) => setField('question_text', html)}
-          placeholder="Tulis pertanyaan essay..."
+          placeholder="Tulis pertanyaan essay... (bisa sisipkan gambar langsung)"
         />
       </div>
 
+      {/* ❌ HAPUS ImageUploader — sudah digantikan inline image di editor */}
 
-      {/* Soal Gambar  */}
-      <ImageUploader
-        value={question.image_url || ''}
-        onChange={(objectKey) => setField('image_url', objectKey)}
-      />
-
-      {/* <div>
-        <label className="mb-1.5 block text-xs font-semibold text-tp-text">Kunci Jawaban / Patokan</label>
-        <textarea
-          rows={3}
-          value={question.answer_key || ''}
-          onChange={(e) => setField('answer_key', e.target.value)}
-          placeholder="Patokan jawaban untuk koreksi manual"
-          className="w-full resize-none rounded-xl border border-tp-border px-3.5 py-2.5 text-sm focus:border-tp-green focus:outline-none"
-        />
-      </div> */}
-
+      {/* Kunci Jawaban */}
       <div>
         <label className="mb-1.5 block text-xs font-semibold text-tp-text">
           Kunci Jawaban / Patokan
@@ -92,7 +66,9 @@ export default function EssayEditor({ question, onChange }: Props) {
               <input
                 type="number"
                 value={r.score ?? 1}
-                onChange={(e) => setRubricItem(i, 'score', parseFloat(e.target.value) || 0)}
+                onChange={(e) =>
+                  setRubricItem(i, 'score', parseFloat(e.target.value) || 0)
+                }
                 className="w-20 rounded-lg border border-tp-border px-3 py-2 text-sm"
               />
               <button
@@ -117,7 +93,9 @@ export default function EssayEditor({ question, onChange }: Props) {
       {/* Meta */}
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="mb-1 block text-[11px] font-semibold text-tp-muted">Skor</label>
+          <label className="mb-1 block text-[11px] font-semibold text-tp-muted">
+            Skor
+          </label>
           <input
             type="number"
             value={question.score ?? 5}
@@ -126,7 +104,9 @@ export default function EssayEditor({ question, onChange }: Props) {
           />
         </div>
         <div>
-          <label className="mb-1 block text-[11px] font-semibold text-tp-muted">Min. Kata</label>
+          <label className="mb-1 block text-[11px] font-semibold text-tp-muted">
+            Min. Kata
+          </label>
           <input
             type="number"
             value={question.min_words ?? 0}
@@ -135,7 +115,9 @@ export default function EssayEditor({ question, onChange }: Props) {
           />
         </div>
         <div>
-          <label className="mb-1 block text-[11px] font-semibold text-tp-muted">Level</label>
+          <label className="mb-1 block text-[11px] font-semibold text-tp-muted">
+            Level
+          </label>
           <select
             value={question.cognitive_level || ''}
             onChange={(e) => setField('cognitive_level', e.target.value)}
@@ -143,7 +125,9 @@ export default function EssayEditor({ question, onChange }: Props) {
           >
             <option value="">--</option>
             {['C1', 'C2', 'C3', 'C4', 'C5', 'C6'].map((l) => (
-              <option key={l} value={l}>{l}</option>
+              <option key={l} value={l}>
+                {l}
+              </option>
             ))}
           </select>
         </div>

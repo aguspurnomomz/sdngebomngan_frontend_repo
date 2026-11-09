@@ -8,7 +8,9 @@ import {
   TrendingUp, Target, ChevronDown, ChevronUp, Download,
 } from 'lucide-react'
 import { supabase } from '../../../lib/supabaseClient'
-import { getImageUrl } from './components/imageUploadHelper'
+import katex from 'katex'
+import 'katex/dist/katex.min.css'
+import CryptoJS from 'crypto-js'
 
 type ExamRubricItem = {
   criteria: string
@@ -22,7 +24,7 @@ type ExamQuestion = {
   type: ExamQuestionType
   order: number
   question_text: string
-  image_url?: string 
+  image_url?: string
   options?: Record<string, string> | null
   correct_answer?: string
   answer_key?: string
@@ -144,18 +146,91 @@ function formatDate(iso: string) {
 }
 
 function exportJSON(exam: ExamDetail) {
-  const dataStr = JSON.stringify(exam, null, 2)
-  const blob = new Blob([dataStr], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `${exam.title.replace(/[^a-z0-9]/gi, '_')}_${exam.id.slice(0, 8)}.json`
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
+  const usePassword = window.confirm(
+    "Apakah Anda ingin mengunci file ini dengan kata sandi?\n\n(File yang terkunci hanya bisa di-import oleh orang yang tahu kata sandinya)."
+  )
+
+  let password = ''
+  if (usePassword) {
+    password = window.prompt("Masukkan kata sandi untuk file ini:") || ''
+    if (!password) {
+      alert("Export dibatalkan. Kata sandi tidak boleh kosong.")
+      return
+    }
+  }
+
+  try {
+    const dataStr = JSON.stringify(exam, null, 2)
+    let finalPayload = dataStr
+    let fileName = `${exam.title.replace(/[^a-z0-9]/gi, '_')}_${exam.id.slice(0, 8)}.json`
+
+    if (password) {
+      const encrypted = CryptoJS.AES.encrypt(dataStr, password).toString()
+      finalPayload = JSON.stringify({ _encrypted: true, _data: encrypted }, null, 2)
+      fileName = `${exam.title.replace(/[^a-z0-9]/gi, '_')}_locked.json`
+    }
+
+    const blob = new Blob([finalPayload], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = fileName
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  } catch (err) {
+    alert("Gagal mengeksport file: " + err)
+  }
 }
 
+function renderMathText(text: string) {
+  if (!text) return null
+  const parts = text.split(/(\$[^$]+\$)/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('$') && part.endsWith('$') && part.length > 1) {
+      try {
+        const html = katex.renderToString(part.slice(1, -1), { throwOnError: false })
+        return <span key={i} dangerouslySetInnerHTML={{ __html: html }} />
+      } catch {
+        return <span key={i}>{part}</span>
+      }
+    }
+    return <span key={i}>{part}</span>
+  })
+}
+
+function renderHtmlWithMath(html: string) {
+  if (!html) return null
+  if (typeof window === 'undefined')
+    return <div dangerouslySetInnerHTML={{ __html: html }} />
+
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(html, 'text/html')
+  const mathNodes = doc.querySelectorAll('[data-type="inline-math"]')
+
+  mathNodes.forEach((node) => {
+    const latex = node.getAttribute('data-latex') || node.textContent || ''
+    if (latex) {
+      try {
+        const renderedMath = katex.renderToString(latex, {
+          throwOnError: false,
+          output: 'html',
+        })
+        node.outerHTML = renderedMath
+      } catch {
+        node.outerHTML = `<span class="text-rose-500">[Math Error]</span>`
+      }
+    }
+  })
+
+  return (
+    <div
+      className="prose prose-sm max-w-none text-tp-text"
+      dangerouslySetInnerHTML={{ __html: doc.body.innerHTML }}
+    />
+  )
+}
 
 export default function ExamDetailPage() {
   const navigate = useNavigate()
@@ -175,13 +250,21 @@ export default function ExamDetailPage() {
   const [confirmArchive, setConfirmArchive] = useState(false)
   const [confirmPublish, setConfirmPublish] = useState(false)
 
+  // State Print & Password
+  const [printMode, setPrintMode] = useState<'full' | 'exam-sheet' | null>(null)
+  const [printAnswers, setPrintAnswers] = useState(false)
+  const [showPrintPasswordModal, setShowPrintPasswordModal] = useState(false)
+  const [printPasswordInput, setPrintPasswordInput] = useState('')
+  const [printFileName, setPrintFileName] = useState('')
 
   const fetchExam = useCallback(async () => {
     if (!examId) return
     setLoading(true)
     setError(null)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       const res = await axios.get<{ exam: ExamDetail }>(
         `${API_URL}/api/school-admin/exams/${examId}`,
         { headers: { Authorization: `Bearer ${session?.access_token}` } }
@@ -198,7 +281,6 @@ export default function ExamDetailPage() {
     fetchExam()
   }, [fetchExam])
 
-  // Close dropdown
   useEffect(() => {
     const handler = () => setOpenMenu(false)
     if (openMenu) {
@@ -207,12 +289,23 @@ export default function ExamDetailPage() {
     }
   }, [openMenu])
 
+  useEffect(() => {
+    if (printMode) {
+      const timer = setTimeout(() => {
+        window.print()
+        setPrintMode(null)
+      }, 300)
+      return () => clearTimeout(timer)
+    }
+  }, [printMode])
 
   const handlePublish = async () => {
     if (!exam) return
     setActionLoading('publish')
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       await axios.patch(
         `${API_URL}/api/school-admin/exams/${exam.id}/publish`,
         {},
@@ -231,7 +324,9 @@ export default function ExamDetailPage() {
     if (!exam) return
     setActionLoading('archive')
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       await axios.patch(
         `${API_URL}/api/school-admin/exams/${exam.id}/archive`,
         {},
@@ -250,7 +345,9 @@ export default function ExamDetailPage() {
     if (!exam) return
     setActionLoading('delete')
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       await axios.delete(`${API_URL}/api/school-admin/exams/${exam.id}`, {
         headers: { Authorization: `Bearer ${session?.access_token}` },
       })
@@ -268,7 +365,34 @@ export default function ExamDetailPage() {
     navigate('/school-admin/dashboard/exams/create?duplicate=1')
   }
 
-  const handlePrint = () => window.print()
+  // --- Logika Print Baru ---
+  const handlePrintExamSheet = () => {
+    setPrintAnswers(false)
+    setPrintMode('exam-sheet')
+  }
+
+   const handlePrintDetail = () => {
+    if (showAnswers) {
+      setPrintPasswordInput('')
+      // Set nama file default (tanpa karakter aneh)
+      const safeTitle = exam?.title.replace(/[^a-z0-9]/gi, '_') || 'Ujian'
+      setPrintFileName(`${safeTitle}_Kunci_Jawaban`)
+      setShowPrintPasswordModal(true)
+    } else {
+      setPrintAnswers(false)
+      setPrintMode('full')
+    }
+  }
+
+  const executeProtectedPrint = () => {
+    if (!printPasswordInput.trim()) {
+      alert('Password wajib diisi untuk memproteksi PDF!')
+      return
+    }
+    setShowPrintPasswordModal(false)
+    setPrintAnswers(true) // Paksa tampilkan jawaban di layout print
+    setPrintMode('full')
+  }
 
   if (loading) {
     return (
@@ -316,7 +440,6 @@ export default function ExamDetailPage() {
   const totalMCQ = exam.questions.filter((q) => q.type === 'multiple_choice').length
   const totalEssay = exam.questions.filter((q) => q.type === 'essay').length
 
-  // Group targets by class — sekarang fully typed
   const groupedTargets = exam.targets.reduce<Record<string, TargetGroup>>(
     (acc, t) => {
       const key = t.class_group_id || 'unknown'
@@ -333,6 +456,62 @@ export default function ExamDetailPage() {
     },
     {}
   )
+
+  // ===== PRINT MODE: LEMBAR UJIAN KERTAS =====
+  if (printMode === 'exam-sheet') {
+    return (
+      <div className="mx-auto max-w-[210mm] bg-white p-8">
+        <ExamSheetPrintLayout exam={exam} />
+      </div>
+    )
+  }
+
+  // ===== PRINT MODE: FULL PAGE (Detail + Kunci Jawaban) =====
+  if (printMode === 'full') {
+    return (
+      <div className="mx-auto max-w-5xl space-y-5 bg-white p-6">
+        {/* Info Nama File (Muncul di atas dokumen untuk di-copy user) */}
+        {printAnswers && (
+          <div className="mb-6 flex items-center justify-between border-b-2 border-dashed border-rose-300 pb-2 print:border-solid print:border-black">
+             <div>
+                <p className="text-[10px] text-rose-600 font-bold uppercase tracking-wider">Kunci Jawaban - Dokumen Rahasia</p>
+                <p className="text-xl font-bold text-tp-text">{printFileName}.pdf</p>
+             </div>
+             <div className="text-right text-[10px] text-gray-500">
+                <p>Pilih "Save as PDF" & atur password.</p>
+             </div>
+          </div>
+        )}
+        
+        <div className="mb-4 border-b pb-3">
+          <h1 className="text-xl font-bold text-tp-text">{exam.title}</h1>
+          <p className="text-sm text-tp-muted">
+            {exam.subject} • {EXAM_TYPE_LABELS[exam.exam_type] || exam.exam_type} • Kelas {exam.grade_level}
+          </p>
+          <p className="text-xs text-tp-muted">
+            {exam.academic_year_name} • Semester {exam.semester}
+          </p>
+        </div>
+
+        <div>
+          <h2 className="mb-2 text-sm font-bold">Daftar Soal ({exam.questions.length})</h2>
+          <div className="space-y-3">
+            {exam.questions
+              .slice()
+              .sort((a, b) => (a.order || 0) - (b.order || 0))
+              .map((q, i) => (
+                <QuestionView 
+                  key={q.id || i} 
+                  question={q} 
+                  index={i} 
+                  showAnswer={printAnswers} // Gunakan state khusus print
+                />
+              ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="mx-auto max-w-5xl space-y-5 print:max-w-full">
@@ -372,13 +551,24 @@ export default function ExamDetailPage() {
             </button>
           )}
 
+          {/* Tombol Print Lembar Ujian (Kertas) */}
           <button
             type="button"
-            onClick={handlePrint}
-            className="hidden h-9 w-9 place-items-center rounded-xl border border-tp-border bg-white text-tp-muted hover:bg-slate-50 sm:grid"
-            title="Print / PDF"
+            onClick={handlePrintExamSheet}
+            className="hidden h-9 items-center gap-1.5 rounded-xl border border-tp-border bg-white px-3 text-xs font-semibold text-tp-text hover:bg-slate-50 sm:inline-flex"
+            title="Print Lembar Ujian Kertas (Tanpa Kunci Jawaban)"
           >
-            <Printer size={14} />
+            <Printer size={14} /> Lembar Ujian
+          </button>
+
+          {/* TOMBOL BARU: Export PDF (Full Detail) */}
+          <button
+            type="button"
+            onClick={handlePrintDetail}
+            className="hidden h-9 items-center gap-1.5 rounded-xl border border-tp-border bg-white px-3 text-xs font-semibold text-tp-text hover:bg-slate-50 sm:inline-flex"
+            title="Export PDF Detail Ujian"
+          >
+            <Download size={14} /> Export PDF
           </button>
 
           {/* More menu */}
@@ -396,7 +586,7 @@ export default function ExamDetailPage() {
 
             {openMenu && (
               <div
-                className="absolute right-0 top-full z-20 mt-1 w-52 overflow-hidden rounded-xl border border-tp-border bg-white shadow-lg"
+                className="absolute right-0 top-full z-20 mt-1 w-56 overflow-hidden rounded-xl border border-tp-border bg-white shadow-lg"
                 onClick={(e) => e.stopPropagation()}
               >
                 <MenuAction
@@ -409,10 +599,18 @@ export default function ExamDetailPage() {
                 />
                 <MenuAction
                   icon={<Printer size={14} />}
-                  label="Print / Save PDF"
+                  label="Print Lembar Ujian (Kertas)"
                   onClick={() => {
                     setOpenMenu(false)
-                    handlePrint()
+                    handlePrintExamSheet()
+                  }}
+                />
+                <MenuAction
+                  icon={<Download size={14} />}
+                  label="Export PDF Detail"
+                  onClick={() => {
+                    setOpenMenu(false)
+                    handlePrintDetail()
                   }}
                 />
                 <MenuAction
@@ -601,10 +799,7 @@ export default function ExamDetailPage() {
       </Section>
 
       {/* Metadata */}
-      <Section
-        icon={<Calendar size={16} className="text-tp-green" />}
-        title="Metadata"
-      >
+      <Section icon={<Calendar size={16} className="text-tp-green" />} title="Metadata">
         <div className="space-y-2.5">
           <MetaRow
             label="ID Ujian"
@@ -613,15 +808,9 @@ export default function ExamDetailPage() {
           <MetaRow label="Dibuat" value={formatDate(exam.created_at)} />
           <MetaRow label="Terakhir diubah" value={formatDate(exam.updated_at)} />
           {exam.published_at && (
-            <MetaRow
-              label="Dipublikasikan"
-              value={formatDate(exam.published_at)}
-            />
+            <MetaRow label="Dipublikasikan" value={formatDate(exam.published_at)} />
           )}
-          <MetaRow
-            label="Auto-grade PG"
-            value={exam.auto_grade_mc ? 'Ya' : 'Tidak'}
-          />
+          <MetaRow label="Auto-grade PG" value={exam.auto_grade_mc ? 'Ya' : 'Tidak'} />
           <MetaRow
             label="Koreksi Essay Manual"
             value={exam.manual_grade_essay ? 'Ya' : 'Tidak'}
@@ -644,7 +833,80 @@ export default function ExamDetailPage() {
         </div>
       </Section>
 
-      {/* Modals */}
+      {/* MODAL: Input Password PDF */}
+        {showPrintPasswordModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowPrintPasswordModal(false)}
+          />
+          <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <h3 className="mb-2 text-lg font-bold text-tp-text">Export PDF Terproteksi</h3>
+            <p className="mb-4 text-sm text-tp-muted">
+              Anda akan mencetak dokumen <strong>beserta kunci jawaban</strong>. 
+              Silakan atur nama file dan password di bawah ini.
+            </p>
+
+            {/* Input Nama File */}
+            <div className="mb-3">
+              <label className="mb-1 block text-[11px] font-semibold text-tp-text">
+                Nama File PDF
+              </label>
+              <input
+                type="text"
+                value={printFileName}
+                onChange={(e) => setPrintFileName(e.target.value)}
+                className="w-full rounded-xl border border-tp-border px-3 py-2 text-sm focus:border-tp-green focus:outline-none focus:ring-1 focus:ring-tp-green"
+              />
+            </div>
+
+            {/* Input Password */}
+            <div className="mb-4">
+              <label className="mb-1 block text-[11px] font-semibold text-tp-text">
+                Password PDF
+              </label>
+              <input
+                type="password"
+                value={printPasswordInput}
+                onChange={(e) => setPrintPasswordInput(e.target.value)}
+                placeholder="Ketik password..."
+                className="w-full rounded-xl border border-tp-border px-3 py-2 text-sm focus:border-tp-green focus:outline-none focus:ring-1 focus:ring-tp-green"
+                autoFocus
+              />
+            </div>
+
+            <div className="rounded-lg bg-blue-50 p-3 text-[11px] text-blue-800 mb-6 border border-blue-200 leading-relaxed">
+              <strong>Langkah Penting Saat Menyimpan:</strong>
+              <ol className="list-decimal pl-4 mt-1 space-y-1">
+                <li>Nama file yang disarankan: <strong className="select-all">{printFileName}.pdf</strong> (Silakan copy-paste).</li>
+                <li>Pada dialog selanjutnya, pastikan Anda memilih <strong>"Save as PDF"</strong>.</li>
+                <li>Klik <strong>"See more"</strong> atau <strong>"More settings"</strong>.</li>
+                <li>Masukkan password di bagian <strong>"Password"</strong> atau <strong>"Security"</strong>.</li>
+              </ol>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowPrintPasswordModal(false)}
+                className="flex-1 rounded-xl border border-tp-border bg-white px-4 py-2.5 text-sm font-semibold text-tp-muted hover:bg-slate-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={executeProtectedPrint}
+                disabled={!printFileName.trim()}
+                className="flex-1 rounded-xl bg-tp-green px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-tp-green-hover disabled:opacity-50"
+              >
+                Lanjut Print
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modals Confirm Delete, Archive, Publish */}
       {confirmDelete && (
         <ConfirmModal
           title="Hapus Ujian Permanen"
@@ -684,6 +946,101 @@ export default function ExamDetailPage() {
   )
 }
 
+/* ============================================================
+ * KOMPONEN PENDUKUNG (Sama seperti sebelumnya)
+ * ============================================================ */
+function ExamSheetPrintLayout({ exam }: { exam: ExamDetail }) {
+  const questions = exam.questions.slice().sort((a, b) => (a.order || 0) - (b.order || 0))
+
+  return (
+    <div className="exam-sheet-print text-black">
+      <div className="mb-5 border-b-2 border-black pb-3 text-center">
+        <h1 className="text-base font-bold uppercase tracking-wide sm:text-lg">
+          {exam.title}
+        </h1>
+        <p className="mt-1 text-xs sm:text-sm">
+          {exam.subject} • {EXAM_TYPE_LABELS[exam.exam_type] || exam.exam_type} • Kelas{' '}
+          {exam.grade_level}
+        </p>
+        <p className="text-[11px] sm:text-xs">
+          {exam.academic_year_name} • Semester {exam.semester} • Durasi:{' '}
+          {exam.duration_minutes} menit
+        </p>
+      </div>
+
+      <div className="mb-5 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
+        <div className="flex items-end gap-2">
+          <span className="w-12 shrink-0 font-semibold">Nama</span>
+          <span className="flex-1 border-b border-black">&nbsp;</span>
+        </div>
+        <div className="flex items-end gap-2">
+          <span className="w-12 shrink-0 font-semibold">Kelas</span>
+          <span className="flex-1 border-b border-black">&nbsp;</span>
+        </div>
+        <div className="flex items-end gap-2">
+          <span className="w-12 shrink-0 font-semibold">NISN</span>
+          <span className="flex-1 border-b border-black">&nbsp;</span>
+        </div>
+      </div>
+
+      <div className="mb-5 rounded border border-black p-3 text-[11px] leading-relaxed sm:text-xs">
+        <p className="mb-1 font-bold">Petunjuk Pengerjaan:</p>
+        <ol className="list-decimal space-y-0.5 pl-4">
+          <li>Tulis nama, kelas, dan NISN pada tempat yang telah disediakan.</li>
+          <li>Baca setiap soal dengan teliti sebelum menjawab.</li>
+          <li>Untuk soal pilihan ganda, pilih satu jawaban yang paling benar.</li>
+          <li>Untuk soal essay, jawab dengan jelas dan lengkap.</li>
+          <li>Periksa kembali jawaban sebelum menyerahkan lembar ujian.</li>
+        </ol>
+      </div>
+
+      <div className="space-y-4">
+        {questions.map((q, i) => {
+          const isMCQ = q.type === 'multiple_choice'
+          return (
+            <div key={q.id || i} className="exam-sheet-question">
+              <div className="flex items-start gap-2 text-sm">
+                <span className="w-6 shrink-0 font-bold">{i + 1}.</span>
+                <div className="flex-1">{renderHtmlWithMath(q.question_text)}</div>
+              </div>
+
+              {isMCQ && q.options && (
+                <div className="ml-8 mt-1.5 grid grid-cols-1 gap-1 text-sm sm:grid-cols-2">
+                  {Object.entries(q.options).map(([key, val]) => (
+                    <div key={key} className="flex items-start gap-2">
+                      <span className="w-4 shrink-0 font-semibold">{key}.</span>
+                      <span className="flex-1">{renderMathText(val as string)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {!isMCQ && (
+                <div className="ml-8 mt-2 space-y-3">
+                  {[1, 2, 3, 4, 5].map((line) => (
+                    <div
+                      key={line}
+                      className="border-b border-dotted border-gray-400"
+                    />
+                  ))}
+                  {typeof q.min_words === 'number' && q.min_words > 0 && (
+                    <p className="text-[10px] italic text-gray-600">
+                      (Minimal {q.min_words} kata)
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="mt-8 border-t border-black pt-2 text-center text-[10px] text-gray-700">
+        <p>— Selamat Mengerjakan —</p>
+      </div>
+    </div>
+  )
+}
 
 function Section({
   icon,
@@ -703,9 +1060,7 @@ function Section({
       <div className="flex items-center gap-2 border-b border-tp-border px-5 py-3.5">
         {icon}
         <h3 className="text-sm font-bold text-tp-text">{title}</h3>
-        {subtitle && (
-          <span className="text-[11px] text-tp-muted">• {subtitle}</span>
-        )}
+        {subtitle && <span className="text-[11px] text-tp-muted">• {subtitle}</span>}
         {right && <div className="ml-auto">{right}</div>}
       </div>
       <div className="p-5">{children}</div>
@@ -777,7 +1132,7 @@ function QuestionView({
   index,
   showAnswer,
 }: {
-  question: ExamQuestion   // ← typed, no more any
+  question: ExamQuestion
   index: number
   showAnswer: boolean
 }) {
@@ -800,12 +1155,6 @@ function QuestionView({
             {question.cognitive_level}
           </span>
         )}
-        {/* Indikator gambar*/}
-        {question.image_url && (
-          <span className="rounded-md bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
-            🖼️ Gambar
-          </span>
-        )}
         {typeof question.min_words === 'number' && question.min_words > 0 && (
           <span className="text-[10px] text-tp-faint">
             Min. {question.min_words} kata
@@ -813,32 +1162,10 @@ function QuestionView({
         )}
       </div>
 
-      {/* <p className="mb-3 text-sm text-tp-text whitespace-pre-wrap">
-        {question.question_text}
-      </p> */}
+      <div className="mb-3 text-sm text-tp-text">
+        {renderHtmlWithMath(question.question_text)}
+      </div>
 
-      <div 
-        className="prose prose-sm max-w-none"
-        dangerouslySetInnerHTML={{ __html: question.question_text }}
-      />
-
-      {/* Gambar soal */}
-      {question.image_url && (
-        <div className="mb-3">
-          <img
-            src={getImageUrl(question.image_url)}
-            alt="Gambar soal"
-            className="max-h-80 max-w-full rounded-xl border border-tp-border bg-white object-contain"
-            loading="lazy"
-            onError={(e) => {
-              console.error('[ExamDetailPage] Gagal load gambar:', question.image_url)
-              ;(e.currentTarget as HTMLImageElement).style.display = 'none'
-            }}
-          />
-        </div>
-      )}
-
-      {/* Opsi PG */}
       {isMCQ && question.options && (
         <div className="grid gap-1.5 sm:grid-cols-2">
           {Object.entries(question.options).map(([key, val]) => {
@@ -853,7 +1180,7 @@ function QuestionView({
                 }`}
               >
                 <span className="shrink-0 font-bold">{key}.</span>
-                <span className="flex-1">{val}</span>
+                <span className="flex-1">{renderMathText(val as string)}</span>
                 {isCorrect && (
                   <CheckCircle2 size={12} className="mt-0.5 shrink-0" />
                 )}
@@ -863,19 +1190,17 @@ function QuestionView({
         </div>
       )}
 
-      {/* Essay answer key */}
       {!isMCQ && showAnswer && question.answer_key && (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-3">
+        <div className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50/60 p-3">
           <p className="mb-1 text-[10px] font-bold uppercase text-emerald-700">
             Kunci Jawaban
           </p>
-          <p className="text-xs text-emerald-900 whitespace-pre-wrap">
-            {question.answer_key}
-          </p>
+          <div className="text-xs text-emerald-900">
+            {renderHtmlWithMath(question.answer_key)}
+          </div>
         </div>
       )}
 
-      {/* Rubric — now typed, no TS error */}
       {!isMCQ && showAnswer && question.rubric && question.rubric.length > 0 && (
         <div className="mt-2 rounded-lg border border-slate-200 bg-white p-3">
           <p className="mb-1.5 text-[10px] font-bold uppercase text-tp-muted">
@@ -895,15 +1220,14 @@ function QuestionView({
         </div>
       )}
 
-      {/* Explanation */}
       {showAnswer && question.explanation && (
         <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50/60 p-3">
           <p className="mb-1 text-[10px] font-bold uppercase text-blue-700">
             Pembahasan
           </p>
-          <p className="text-xs text-blue-900 whitespace-pre-wrap">
-            {question.explanation}
-          </p>
+          <div className="text-xs text-blue-900">
+            {renderHtmlWithMath(question.explanation)}
+          </div>
         </div>
       )}
     </div>

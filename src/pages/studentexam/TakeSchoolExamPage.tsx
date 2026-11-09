@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { getImageUrl } from '../adminschool/exams/components/imageUploadHelper'
-import QuestionContent from '../adminschool/exams/components/QuestionContent'
 import axios from 'axios'
+import katex from 'katex'
+import 'katex/dist/katex.min.css'
 import {
   Clock, AlertCircle, Loader2, CheckCircle2, ChevronLeft,
   ChevronRight, Send, WifiOff, Wifi,
@@ -31,6 +32,56 @@ import {
 const API_URL = import.meta.env.VITE_API_URL
 
 type Phase = 'gate' | 'loading' | 'exam' | 'submitting' | 'result'
+
+// =========================================================================
+// HELPER RENDER HTML & MATH
+// =========================================================================
+function renderMathText(text: string) {
+  if (!text) return null
+  const parts = text.split(/(\$[^$]+\$)/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('$') && part.endsWith('$') && part.length > 1) {
+      try {
+        const html = katex.renderToString(part.slice(1, -1), { throwOnError: false })
+        return <span key={i} dangerouslySetInnerHTML={{ __html: html }} />
+      } catch {
+        return <span key={i}>{part}</span>
+      }
+    }
+    return <span key={i}>{part}</span>
+  })
+}
+
+function renderHtmlWithMath(html: string) {
+  if (!html) return null
+  if (typeof window === 'undefined') return <div dangerouslySetInnerHTML={{ __html: html }} />
+
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(html, 'text/html')
+  
+  // Ganti node inline-math dengan KaTeX
+  const mathNodes = doc.querySelectorAll('[data-type="inline-math"]')
+  mathNodes.forEach((node) => {
+    const latex = node.getAttribute('data-latex') || node.textContent || ''
+    if (latex) {
+      try {
+        const renderedMath = katex.renderToString(latex, { throwOnError: false, output: 'html' })
+        node.outerHTML = renderedMath
+      } catch (e) {
+        node.outerHTML = `<span class="text-rose-500">[Math Error]</span>`
+      }
+    }
+  })
+
+  return (
+    <div 
+      className="prose prose-sm max-w-none text-tp-text" 
+      dangerouslySetInnerHTML={{ __html: doc.body.innerHTML }} 
+    />
+  )
+}
+// =========================================================================
+
 
 export default function TakeSchoolExamPage() {
   const [phase, setPhase] = useState<Phase>('gate')
@@ -147,44 +198,11 @@ export default function TakeSchoolExamPage() {
   }, [submitting])
 
 
-  // useEffect(() => {
-  //   if (phase !== 'exam' || !snapshot) return
-
-  //   autoSubmitTriggeredRef.current = false
-
-  //   const tick = () => {
-  //     const expires = new Date(snapshot.expires_at).getTime()
-  //     const remaining = Math.max(0, Math.floor((expires - Date.now()) / 1000))
-  //     setTimeLeft(remaining)
-  //     timeLeftRef.current = remaining 
-
-  //     if (
-  //       remaining <= 0 &&
-  //       !autoSubmitTriggeredRef.current &&
-  //       !submittingRef.current
-  //     ) {
-  //       autoSubmitTriggeredRef.current = true
-  //       console.log('[TakeExam] ⏰ Timer habis — auto-submit triggered')
-  //       handleAutoSubmit()
-  //     }
-  //   }
-
-  //   tick()
-  //   const interval = window.setInterval(tick, 1000)
-  //   return () => window.clearInterval(interval)
-  // }, [phase, snapshot]) 
-
   useEffect(() => {
     if (phase !== 'exam' || !snapshot) return
 
     autoSubmitTriggeredRef.current = false
-
-    // Simpan selisih waktu server vs client, supaya timer tidak terpengaruh jam lokal
     const clientNow = Date.now()
-    //const serverNow = new Date(snapshot.server_time).getTime()
-    //const serverOffset = serverNow - clientNow
-
-    // Basis timer = remaining_seconds dari server (bukan from expires_at)
     const baseRemaining = snapshot.remaining_seconds ?? Math.max(
       0,
       Math.floor((new Date(snapshot.expires_at).getTime() - clientNow) / 1000)
@@ -192,7 +210,6 @@ export default function TakeSchoolExamPage() {
     const localStartAt = Date.now()
 
     const tick = () => {
-      // elapsed = waktu berlalu sejak snapshot disimpan
       const elapsed = Math.floor((Date.now() - localStartAt) / 1000)
       const remaining = Math.max(0, baseRemaining - elapsed)
 
@@ -358,7 +375,6 @@ export default function TakeSchoolExamPage() {
           console.log('[TakeExam] Timer resync from server:', data.remaining_seconds)
           setTimeLeft(data.remaining_seconds)
           timeLeftRef.current = data.remaining_seconds
-          // Update snapshot agar base timer ikut berubah
           const updatedSnap = {
             ...snapshot,
             expires_at: data.expires_at,
@@ -370,7 +386,6 @@ export default function TakeSchoolExamPage() {
         }
       }
 
-      // Handle block
       if (data.is_blocked) {
         setServerBlock((prev) => {
           if (prev) return prev
@@ -629,7 +644,7 @@ export default function TakeSchoolExamPage() {
   const handleAnswerChange = (questionId: string, value: string) => {
     setAnswers((prev) => {
       const next = { ...prev, [questionId]: value }
-      answersRef.current = next // sync immediate
+      answersRef.current = next
       return next
     })
   }
@@ -1041,11 +1056,10 @@ export default function TakeSchoolExamPage() {
             </span>
           </div>
 
-          <QuestionContent 
-            key={currentQuestion.id}
-            html={currentQuestion.question_text} 
-            className="mb-5 text-sm" 
-          />
+          {/* PERTANYAAN: Dirender dengan HTML + Math */}
+          <div className="mb-5 text-sm">
+            {renderHtmlWithMath(currentQuestion.question_text)}
+          </div>
 
            {/* Gambar soal */}
           {currentQuestion.image_url && (
@@ -1089,11 +1103,11 @@ export default function TakeSchoolExamPage() {
                       >
                         {key}
                       </span>
-                      {/* <span className="flex-1 text-sm text-tp-text">{val}</span> */}
-                      <QuestionContent 
-                        html={val as string} 
-                        className="flex-1 text-sm [&>p]:m-0" 
-                      />
+                      
+                      {/* OPSI JAWABAN: Dirender dengan Math ($...$) */}
+                      <span className="flex-1 text-sm text-tp-text mt-0.5">
+                        {renderMathText(val as string)}
+                      </span>
                     </button>
                   )
                 })}
