@@ -252,15 +252,27 @@ useEffect(() => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
 }, [location.pathname])
 
+// const handleLogout = async () => {
+//     try {
+//       setIsLoggingOut(true)
+//       await supabase.auth.signOut()
+//       navigate('/pilih-portal', { replace: true })
+//     } catch (error) {
+//       console.error('Gagal keluar:', error)
+//       setIsLoggingOut(false)
+//     }
+// }
+
 const handleLogout = async () => {
-    try {
-      setIsLoggingOut(true)
-      await supabase.auth.signOut()
-      navigate('/', { replace: true })
-    } catch (error) {
-      console.error('Gagal keluar:', error)
-      setIsLoggingOut(false)
-    }
+  try {
+    setIsLoggingOut(true)
+    await supabase.auth.signOut()
+    // Arahkan ke halaman login admin sekolah, bukan pilih-portal
+    navigate('/login/admin-sekolah', { replace: true })
+  } catch (error) {
+    console.error('Gagal keluar:', error)
+    setIsLoggingOut(false)
+  }
 }
 
 const closeSidebar = () => setSidebarOpen(false)

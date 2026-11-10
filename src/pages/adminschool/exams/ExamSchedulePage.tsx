@@ -166,7 +166,8 @@ export default function ExamSchedulePage() {
         </div>
         <button
           type="button"
-          onClick={() => navigate('/school-admin/dashboard/exam-schedules/create')}
+          // onClick={() => navigate('/school-admin/dashboard/exam-schedules/create')}
+          onClick={() => navigate('create')}
           className="inline-flex items-center gap-2 rounded-xl bg-tp-green px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-tp-green-hover"
         >
           <Plus size={16} /> Buat Jadwal
