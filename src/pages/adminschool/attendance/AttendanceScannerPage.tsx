@@ -63,6 +63,7 @@ export default function AttendanceScannerPage() {
   const [cooldown, setCooldown] = useState(false)
   const [lastSuccessName, setLastSuccessName] = useState<string>('')
   const [scanMode, setScanMode] = useState<ScanMode>('qr')
+  const [resolvingSession, setResolvingSession] = useState(false)
 
   const scannerRef = useRef<Html5Qrcode | null>(null)
   const processingRef = useRef<boolean>(false)
@@ -75,6 +76,8 @@ export default function AttendanceScannerPage() {
 
   const soundEnabledRef = useRef<boolean>(true)
   const handleScanRef = useRef<(text: string) => void>(() => {})
+
+  
 
   const API_URL = import.meta.env.VITE_API_URL as string
 
@@ -161,6 +164,38 @@ export default function AttendanceScannerPage() {
       setLoading(false)
     }
   }, [API_URL, sessionId])
+
+  useEffect(() => {
+    const resolveSession = async () => {
+      if (sessionId) return 
+
+      setResolvingSession(true)
+      try {
+        const token = await getAuthToken()
+        if (!token) return
+
+        const res = await axios.get(
+          `${API_URL}/api/school-admin/attendance/sessions/active-today`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+
+        if (res.data?.available && res.data.session?.id) {
+          navigate(
+            `/school-admin/dashboard/attendance/scanner/${res.data.session.id}`,
+            { replace: true }
+          )
+        } else {
+          setError('Tidak ada sesi absensi aktif saat ini. Buka sesi terlebih dahulu.')
+        }
+      } catch (err: any) {
+        setError(err.response?.data?.error || 'Gagal mencari sesi aktif')
+      } finally {
+        setResolvingSession(false)
+      }
+    }
+
+    resolveSession()
+  }, [sessionId, API_URL, navigate])
 
   useEffect(() => {
     sessionIdRef.current = sessionId ?? null
@@ -451,7 +486,7 @@ export default function AttendanceScannerPage() {
   }
 
 
-  if (loading) {
+  if (loading || resolvingSession) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <p className="text-sm text-tp-muted">Memuat sesi...</p>

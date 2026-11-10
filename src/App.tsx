@@ -24,6 +24,7 @@ import ExamSessionPage from './pages/userteacher/ExamSessionPage'
 
 import TakeSchoolExamPage from './pages/studentexam/TakeSchoolExamPage'
 import TakePersonalExamPage from './pages/studentexam/TakePersonalExamPage'
+import KioskScannerPage from './pages/publickiosk/KioskScannerPage'
 
 import SuperAdminLoginPage from './pages/superadmin/SuperAdminLoginPage'
 import SuperAdminDashboard from './pages/superadmin/SuperAdminDashboard'
@@ -38,6 +39,15 @@ import StudentManagementPage from './pages/adminschool/StudentManagementPage'
 import TeacherManagementPage from './pages/adminschool/TeacherManagementPage'
 import SubjectManagementPage from './pages/adminschool/SubjectManagementPage'
 import SchoolInactivePage from './pages/adminschool/SchoolInactivePage'
+
+import AttendanceDashboard from './pages/adminschool/attendance/AttendanceDashboard'
+import ShiftManagementPage from './pages/adminschool/attendance/ShiftManagementPage'
+import CalendarManagementPage from './pages/adminschool/attendance/CalendarManagementPage'
+import ShiftAssignmentPage from './pages/adminschool/attendance/ShiftAssignmentPage'
+import QrCodeManagementPage from './pages/adminschool/attendance/QrCodeManagementPage'
+import AttendanceSessionPage from './pages/adminschool/attendance/AttendanceSessionPage'
+import AttendanceScannerPage from './pages/adminschool/attendance/AttendanceScannerPage'
+import AttendanceReportPage from './pages/adminschool/attendance/AttendanceReportPage'
 
 import TimetableManagementPage from './pages/adminschool/TimetableManagementPage'
 import TimetableEditorPage from './pages/adminschool/TimetableEditorPage'
@@ -506,6 +516,15 @@ export default function App() {
         <Route path="timetables/:timetableId" element={<TimetableEditorPage />} />
         <Route path="time-slots" element={<TimeSlotManagementPage />} />
 
+        <Route path="attendance" element={<AttendanceDashboard />} />
+        <Route path="attendance/shifts" element={<ShiftManagementPage />} />
+        <Route path="attendance/calendar" element={<CalendarManagementPage />} />
+        <Route path="attendance/assignments" element={<ShiftAssignmentPage />} />
+        <Route path="attendance/qr-codes" element={<QrCodeManagementPage />} />
+        <Route path="attendance/sessions" element={<AttendanceSessionPage />} />
+        <Route path="attendance/scanner/:sessionId" element={<AttendanceScannerPage />}/>
+        <Route path="attendance/reports" element={<AttendanceReportPage />} />
+
         {/* === EXAM ROUTES (Admin Sekolah) === */}
         <Route path="exams" element={<ExamListPage />} />
         <Route path="exams/create" element={<CreateExamPage />} />
@@ -541,6 +560,7 @@ export default function App() {
       <Route path="/update-password" element={<UpdatePasswordPage />} />
       <Route path="/school-exam" element={<TakeSchoolExamPage />} />
       <Route path="/personal-exam" element={<TakePersonalExamPage />} />
+      <Route path="/kiosk/:code" element={<KioskScannerPage />} />
 
       {/* <Route
         path="/"

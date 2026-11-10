@@ -13,7 +13,7 @@ import {
   CalendarClock,
   LayoutDashboard, 
   GraduationCap, 
-  // ClipboardCheck, 
+  ClipboardCheck, 
   FileText,
   UserCog,
   ChevronDown, 
@@ -168,6 +168,11 @@ export default function SchoolAdminDashboard({ session }: { session: any }) {
         icon: <CalendarClock size={14} />,
       },
     ],
+  },
+  {
+    path: '/school-admin/dashboard/attendance',
+    label: 'Kelola Absensi',
+    icon: <ClipboardCheck size={18} />,
   },
 ]
 

@@ -147,27 +147,45 @@ export default function AttendanceSessionPage() {
       if (!token) return
 
       // Generate title otomatis jika kosong
-      let title = formTitle.trim()
-      if (!title) {
-        const shift = shifts.find((s) => s.id === formShiftID)
-        const cls = classGroups.find((c) => c.id === formClassGroupID)
-        title = `${shift?.name || 'Shift'} - ${cls?.name || 'Semua Kelas'}`
-      }
+      // let title = formTitle.trim()
+      // if (!title) {
+      //   const shift = shifts.find((s) => s.id === formShiftID)
+      //   const cls = classGroups.find((c) => c.id === formClassGroupID)
+      //   title = `${shift?.name || 'Shift'} - ${cls?.name || 'Semua Kelas'}`
+      // }
+      const title = formTitle.trim()
 
       await axios.post(
-        `${API_URL}/api/school-admin/attendance/sessions`,
-        {
-          shift_id: formShiftID,
-          class_group_id: formClassGroupID || undefined,
-          class_sub_group_id: formSubClassID || undefined,
-          title,
-          session_date: formDate,
-          notes: formNotes.trim(),
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
+      `${API_URL}/api/school-admin/attendance/sessions`,
+      {
+        shift_id: formShiftID,
+        class_group_id: formClassGroupID || undefined,
+        class_sub_group_id: formSubClassID || undefined,
+        title, // bisa kosong string
+        session_date: formDate,
+        notes: formNotes.trim(),
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
 
+      const res = await axios.post(
+      `${API_URL}/api/school-admin/attendance/sessions`,
+      {
+        shift_id: formShiftID,
+        class_group_id: formClassGroupID || undefined,
+        class_sub_group_id: formSubClassID || undefined,
+        title,
+        session_date: formDate,
+        notes: formNotes.trim(),
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+
+    if (res.data?.already_exists) {
+      showSuccess('Sesi untuk shift & tanggal ini sudah ada — memakai sesi yang existing.')
+    } else {
       showSuccess('Sesi berhasil dibuat!')
+    }
       setIsModalOpen(false)
       await fetchAll()
     } catch (error: any) {
