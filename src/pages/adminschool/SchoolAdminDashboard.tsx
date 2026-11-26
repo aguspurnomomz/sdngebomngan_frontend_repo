@@ -13,7 +13,7 @@ import {
   CalendarClock,
   LayoutDashboard, 
   GraduationCap, 
-  ClipboardCheck, 
+  //ClipboardCheck, 
   FileText,
   UserCog,
   ChevronDown, 
@@ -169,11 +169,11 @@ export default function SchoolAdminDashboard({ session }: { session: any }) {
       },
     ],
   },
-  {
-    path: '/school-admin/dashboard/attendance',
-    label: 'Kelola Absensi',
-    icon: <ClipboardCheck size={18} />,
-  },
+  // {
+  //   path: '/school-admin/dashboard/attendance',
+  //   label: 'Kelola Absensi',
+  //   icon: <ClipboardCheck size={18} />,
+  // },
 ]
 
 const toggleMenu = (key: string) => {
